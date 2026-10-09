@@ -11,17 +11,17 @@ Explore how element magnitude, excitation phase, and spatial separation shape fa
 ## 🌟 Key Features
 
 ### 1. Multi-View Interactive Visualizations
-- **2D Polar Radiation Pattern**: High-DPI canvas polar diagram with logarithmic ($\text{dB}$), linear field ($|E|$), and **absolute power ($|E|^2$)** modes. The absolute power mode allows direct visualization of constructive interference (surpassing the uncorrelated baseline $A_1^2 + A_2^2$) and destructive interference (cancellations and sharp nulls), complete with concentric scale rings, half-power beamwidth ($-3\text{ dB}$ HPBW) sector highlight, antenna array axis markers, and interactive hover inspection.
-- **2D Wave Interference Heatmap**: 60 FPS animated electromagnetic wavefront propagation showing constructive interference (surging wavefronts) and destructive interference (dead nulls) with customizable color palettes (*Cyberpunk EM*, *Plasma Thermal*, *Emerald Radar*).
-- **3D Far-Field Radiation Pattern**: WebGL Three.js interactive 3D radiation lobe with vertex false-color gain mapping, orbit rotation, zoom, and wireframe toggle.
-- **Cartesian Plot**: Azimuth angle ($0^\circ \to 360^\circ$) vs Normalized Gain in $\text{dB}$ or linear scale, with $-3\text{ dB}$ threshold and peak indicators.
+- **2D Polar Radiation Pattern**: High-DPI canvas polar diagram with logarithmic ($\text{dB}$), linear field ($|E|$), and **absolute power ($|E|^2$)** modes using IEEE/MATLAB standard scientific styling. Visualizes constructive interference (surpassing baseline $A_1^2 + A_2^2$) and destructive interference (cancellations and sharp nulls), complete with concentric scale rings, half-power beamwidth ($-3\text{ dB}$ HPBW) sector highlight, antenna array axis markers, and interactive hover inspection.
+- **2D Wave Propagation & 1D Two-Source Wave Analyzer**: 60 FPS synchronized electromagnetic wavefield propagation with scientific Diverging Colormap (*BWR / CoolWarm*, *Viridis*, *Thermal Turbo*). Features a dedicated **1D Dual-Source Interference Analyzer** plotting $E_1(x, t)$ (CH1 Blue), $E_2(x, t)$ (CH2 Orange), their total superposition $E_{\text{total}}(x, t)$ (Emerald), and constructive/destructive envelope bounds $\pm E_{\text{env}}(x)$ along the array axis ($y = 0$) or time-domain waveforms, with real-time cursor inspection and source location pins ($x = \pm d/2$).
+- **RF Power Density Heatmap**: Visualizes Near-Field, Fresnel Radiating Zone, and Fraunhofer Far-Field with smooth zoom, pan, and zone boundaries.
+- **Cartesian Plot**: Azimuth angle ($-180^\circ \to +180^\circ$ or $0^\circ \to 360^\circ$) vs Normalized Gain in $\text{dB}$, linear field, or absolute power, with Keysight/VNA-grade graticule and HPBW markers.
 
 ### 2. Comprehensive Controls
-- **Point Source 1 ($E_1$)**: Magnitude ($A_1 \in [0.0, 2.0]$) and Phase ($\alpha_1 \in [-180^\circ, +180^\circ]$) with quick angle chips.
-- **Point Source 2 ($E_2$)**: Magnitude ($A_2 \in [0.0, 2.0]$) and Phase ($\alpha_2 \in [-180^\circ, +180^\circ]$) with quick angle chips.
-- **Separation Distance ($d$)**: Slider in fractions of wavelength ($d/\lambda \in [0.05, 4.0\lambda]$) with automatic physical conversion into millimeters based on the operating frequency.
+- **Point Source 1 ($E_1$)**: Fixed Reference Source ($A_1 = 1.00\text{ V/m}$, $\alpha_1 = 0^\circ$).
+- **Point Source 2 ($E_2$)**: Magnitude ($A_2 \in [0.0, 3.0\text{ V/m}]$) and Phase Shift ($\alpha_2 \in [-180^\circ, +180^\circ]$) with quick angle chips.
+- **Separation Distance ($d$)**: Slider in fractions of wavelength ($d/\lambda \in [0.05, 3.5\lambda]$) with automatic physical conversion into meters based on the operating frequency.
 - **Direct Phase Difference & Beam Steerer**: Progressive phase shift $\Delta\phi = \alpha_2 - \alpha_1$ and beam steering helper ($\theta_{\text{steer}}$).
-- **Fixed Operating Frequency**: Pre-set to $2.40\text{ GHz}$ ISM band ($\lambda = 125.0\text{ mm}$, wavenumber $k = 50.3\text{ rad/m}$).
+- **Operating Frequency**: Standardized to $145.000\text{ MHz}$ VHF 2-Meter Amateur / Satellite band ($\lambda = 2.068\text{ m}$, wavenumber $k = 3.039\text{ rad/m}$).
 
 ### 3. Real-Time Antenna Analytics Dashboard
 - **Peak Directivity ($D_0$)**: Numerical integration in $\text{dBi}$ and isotropic multiplier.

@@ -197,16 +197,16 @@ export class PolarPlotRenderer {
       const pBase = this.cachedPattern?.baselinePower || 2.0;
       const rBase = this.valueToRadius(pBase, maxR);
 
-      // Background circle fill
+      // Background circle fill (Lab CRT screen dark)
       ctx.beginPath();
       ctx.arc(cx, cy, maxR, 0, 2 * Math.PI);
-      ctx.fillStyle = 'rgba(11, 19, 38, 0.75)';
+      ctx.fillStyle = '#080c14';
       ctx.fill();
 
-      // Subtle cyan wash for destructive interference zone (< P0)
+      // Muted technical wash for destructive interference zone (< P0)
       ctx.beginPath();
       ctx.arc(cx, cy, rBase, 0, 2 * Math.PI);
-      ctx.fillStyle = 'rgba(6, 182, 212, 0.08)';
+      ctx.fillStyle = 'rgba(30, 41, 59, 0.45)';
       ctx.fill();
 
       // Step rings: 100%, 75%, 50%, 25% of pMax
@@ -217,7 +217,7 @@ export class PolarPlotRenderer {
         const isNearBase = Math.abs(rad - rBase) < 8 * this.devicePixelRatio;
         return {
           radius: rad,
-          label: isNearBase ? `${pBase.toFixed(1)} P₀ (Threshold)` : `${pVal.toFixed(1)} (|E|²)`,
+          label: isNearBase ? `${pBase.toFixed(1)} P₀ (Threshold)` : `${pVal.toFixed(1)} W`,
           isHalfPower: false,
           isBaseline: isNearBase
         };
@@ -247,7 +247,7 @@ export class PolarPlotRenderer {
       // Background circle fill for db and linear
       ctx.beginPath();
       ctx.arc(cx, cy, maxR, 0, 2 * Math.PI);
-      ctx.fillStyle = 'rgba(11, 19, 38, 0.65)';
+      ctx.fillStyle = '#080c14';
       ctx.fill();
     }
 
@@ -257,15 +257,15 @@ export class PolarPlotRenderer {
       ctx.arc(cx, cy, radius, 0, 2 * Math.PI);
 
       if (isBaseline) {
-        ctx.strokeStyle = 'rgba(6, 182, 212, 0.85)'; // bright cyan dashed for destructive baseline
+        ctx.strokeStyle = '#ff7f0e'; // Matplotlib orange dashed baseline
         ctx.lineWidth = 1.5 * this.devicePixelRatio;
         ctx.setLineDash([5 * this.devicePixelRatio, 3 * this.devicePixelRatio]);
       } else if (isHalfPower) {
-        ctx.strokeStyle = 'rgba(245, 158, 11, 0.5)'; // amber dashed for -3dB HPBW
+        ctx.strokeStyle = '#d97706'; // Matplotlib amber dashed for -3dB HPBW
         ctx.lineWidth = 1 * this.devicePixelRatio;
         ctx.setLineDash([4 * this.devicePixelRatio, 4 * this.devicePixelRatio]);
       } else {
-        ctx.strokeStyle = 'rgba(148, 163, 184, 0.2)';
+        ctx.strokeStyle = 'rgba(71, 85, 105, 0.35)'; // Clean slate graticule
         ctx.lineWidth = 1 * this.devicePixelRatio;
         ctx.setLineDash([]);
       }
@@ -276,7 +276,7 @@ export class PolarPlotRenderer {
       const lx = cx + radius * Math.cos(lblAngle);
       const ly = cy + radius * Math.sin(lblAngle);
 
-      ctx.fillStyle = isBaseline ? '#38bdf8' : (isHalfPower ? '#fbbf24' : 'rgba(148, 163, 184, 0.7)');
+      ctx.fillStyle = isBaseline ? '#ff7f0e' : (isHalfPower ? '#f59e0b' : '#94a3b8');
       ctx.font = `${(isBaseline ? 10.5 : 10) * this.devicePixelRatio}px 'JetBrains Mono', monospace`;
       ctx.textAlign = 'left';
       ctx.textBaseline = 'bottom';
@@ -353,32 +353,32 @@ export class PolarPlotRenderer {
     }
     ctx.closePath();
 
-    // Gradient fill
+    // Gradient fill using scientific Matplotlib palette
     const grad = ctx.createRadialGradient(cx, cy, 0, cx, cy, maxR);
     if (this.scaleMode === 'absPower') {
       const pMax = Math.max(0.1, maxTheoreticalPower || 4.0);
       const pBase = baselinePower || 2.0;
       const baseRatio = Math.min(0.9, Math.max(0.1, pBase / pMax));
 
-      // Destructive interference inner core (deep cyan / indigo / null)
-      grad.addColorStop(0, 'rgba(6, 182, 212, 0.15)');
-      grad.addColorStop(baseRatio * 0.7, 'rgba(14, 165, 233, 0.25)');
-      grad.addColorStop(baseRatio, 'rgba(56, 189, 248, 0.35)'); // baseline threshold
-      // Constructive interference outer lobe (amber / purple / magenta)
-      grad.addColorStop(Math.min(1, baseRatio + (1 - baseRatio) * 0.5), 'rgba(168, 85, 247, 0.45)');
-      grad.addColorStop(1, 'rgba(236, 72, 153, 0.55)');
+      // Authentic Matplotlib Viridis gradient (purple nulls -> teal threshold -> yellow peak)
+      grad.addColorStop(0, 'rgba(68, 1, 84, 0.25)'); // Viridis purple (null core)
+      grad.addColorStop(baseRatio * 0.6, 'rgba(59, 82, 139, 0.35)'); // Viridis blue
+      grad.addColorStop(baseRatio, 'rgba(33, 144, 141, 0.45)'); // Viridis teal (P0 baseline threshold)
+      grad.addColorStop(Math.min(1, baseRatio + (1 - baseRatio) * 0.5), 'rgba(93, 200, 99, 0.55)'); // Viridis green
+      grad.addColorStop(1, 'rgba(253, 231, 37, 0.65)'); // Viridis yellow (peak constructive)
     } else {
-      grad.addColorStop(0, 'rgba(0, 242, 254, 0.1)');
-      grad.addColorStop(0.5, 'rgba(56, 189, 248, 0.25)');
-      grad.addColorStop(0.85, 'rgba(168, 85, 247, 0.35)');
-      grad.addColorStop(1, 'rgba(236, 72, 153, 0.45)');
+      // Standard scientific blue (Matplotlib tab:blue #1f77b4)
+      grad.addColorStop(0, 'rgba(31, 119, 180, 0.08)');
+      grad.addColorStop(0.5, 'rgba(31, 119, 180, 0.22)');
+      grad.addColorStop(0.85, 'rgba(31, 119, 180, 0.38)');
+      grad.addColorStop(1, 'rgba(31, 119, 180, 0.52)');
     }
 
     ctx.fillStyle = grad;
     ctx.fill();
 
-    // Crisp engineering stroke - clean, professional
-    ctx.strokeStyle = '#38bdf8';
+    // Crisp scientific stroke (Matplotlib tab:blue #1f77b4)
+    ctx.strokeStyle = '#1f77b4';
     ctx.lineWidth = 2.0 * this.devicePixelRatio;
     ctx.stroke();
 
@@ -403,11 +403,11 @@ export class PolarPlotRenderer {
       const outerX = cx + outerR * Math.cos(rad);
       const outerY = cy - outerR * Math.sin(rad);
 
-      // Dashed null pointer
+      // Dashed null pointer (Matplotlib tab:red)
       ctx.beginPath();
       ctx.moveTo(innerX, innerY);
       ctx.lineTo(outerX, outerY);
-      ctx.strokeStyle = 'rgba(239, 68, 68, 0.65)'; // red/coral null pointer
+      ctx.strokeStyle = '#d62728';
       ctx.lineWidth = 1.2 * this.devicePixelRatio;
       ctx.setLineDash([2 * this.devicePixelRatio, 2 * this.devicePixelRatio]);
       ctx.stroke();
@@ -415,7 +415,7 @@ export class PolarPlotRenderer {
       // Dot at null point
       ctx.beginPath();
       ctx.arc(innerX, innerY, 3.5 * this.devicePixelRatio, 0, 2 * Math.PI);
-      ctx.fillStyle = '#ef4444';
+      ctx.fillStyle = '#d62728';
       ctx.fill();
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1 * this.devicePixelRatio;
@@ -423,10 +423,10 @@ export class PolarPlotRenderer {
 
       // Null label badge at perimeter
       ctx.font = `${9 * this.devicePixelRatio}px 'JetBrains Mono', monospace`;
-      ctx.fillStyle = '#f87171';
+      ctx.fillStyle = '#ef4444';
       ctx.textAlign = Math.cos(rad) > 0.3 ? 'left' : (Math.cos(rad) < -0.3 ? 'right' : 'center');
       ctx.textBaseline = Math.sin(rad) > 0.3 ? 'bottom' : (Math.sin(rad) < -0.3 ? 'top' : 'middle');
-      ctx.fillText(`Null ${deg}° (${absP})`, outerX, outerY);
+      ctx.fillText(`Null ${deg}° (${absP} W)`, outerX, outerY);
     });
     ctx.restore();
   }
@@ -460,9 +460,9 @@ export class PolarPlotRenderer {
     ctx.arc(cx, cy, hpbwR, -endRad, -startRad, false);
     ctx.closePath();
 
-    ctx.fillStyle = 'rgba(245, 158, 11, 0.15)';
+    ctx.fillStyle = 'rgba(217, 119, 6, 0.15)'; // Matplotlib amber
     ctx.fill();
-    ctx.strokeStyle = 'rgba(245, 158, 11, 0.7)';
+    ctx.strokeStyle = '#d97706';
     ctx.lineWidth = 1.5 * this.devicePixelRatio;
     ctx.stroke();
 
@@ -476,38 +476,38 @@ export class PolarPlotRenderer {
     ctx.beginPath();
     ctx.moveTo(cx - axisLen, cy);
     ctx.lineTo(cx + axisLen, cy);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.4)';
     ctx.lineWidth = 1.5 * this.devicePixelRatio;
     ctx.setLineDash([2 * this.devicePixelRatio, 2 * this.devicePixelRatio]);
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Element 1 marker (-X)
+    // Channel 1 Element marker (-X side, Matplotlib tab:blue)
     const e1X = cx - axisLen * 0.75;
     ctx.beginPath();
-    ctx.arc(e1X, cy, 4 * this.devicePixelRatio, 0, 2 * Math.PI);
-    ctx.fillStyle = '#06b6d4'; // Cyan
+    ctx.arc(e1X, cy, 4.5 * this.devicePixelRatio, 0, 2 * Math.PI);
+    ctx.fillStyle = '#1f77b4';
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1 * this.devicePixelRatio;
     ctx.stroke();
 
-    // Element 2 marker (+X)
+    // Channel 2 Element marker (+X side, Matplotlib tab:orange)
     const e2X = cx + axisLen * 0.75;
     ctx.beginPath();
-    ctx.arc(e2X, cy, 4 * this.devicePixelRatio, 0, 2 * Math.PI);
-    ctx.fillStyle = '#ec4899'; // Magenta / Pink
+    ctx.arc(e2X, cy, 4.5 * this.devicePixelRatio, 0, 2 * Math.PI);
+    ctx.fillStyle = '#ff7f0e';
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1 * this.devicePixelRatio;
     ctx.stroke();
 
-    // Tiny labels
-    ctx.font = `${8 * this.devicePixelRatio}px 'JetBrains Mono', monospace`;
-    ctx.fillStyle = 'rgba(255, 255, 255, 0.7)';
+    // Channel tags
+    ctx.font = `bold ${8.5 * this.devicePixelRatio}px 'JetBrains Mono', monospace`;
+    ctx.fillStyle = '#94a3b8';
     ctx.textAlign = 'center';
-    ctx.fillText('E1', e1X, cy + 12 * this.devicePixelRatio);
-    ctx.fillText('E2', e2X, cy + 12 * this.devicePixelRatio);
+    ctx.fillText('CH1', e1X, cy + 13 * this.devicePixelRatio);
+    ctx.fillText('CH2', e2X, cy + 13 * this.devicePixelRatio);
 
     ctx.restore();
   }
@@ -521,7 +521,7 @@ export class PolarPlotRenderer {
     ctx.beginPath();
     ctx.moveTo(cx, cy);
     ctx.lineTo(x, y);
-    ctx.strokeStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.strokeStyle = 'rgba(148, 163, 184, 0.5)';
     ctx.lineWidth = 1.5 * this.devicePixelRatio;
     ctx.setLineDash([3 * this.devicePixelRatio, 3 * this.devicePixelRatio]);
     ctx.stroke();
@@ -543,7 +543,7 @@ export class PolarPlotRenderer {
 
       ctx.beginPath();
       ctx.arc(px, py, 4.5 * this.devicePixelRatio, 0, 2 * Math.PI);
-      ctx.fillStyle = info.isDestructive ? '#38bdf8' : '#ec4899';
+      ctx.fillStyle = info.isDestructive ? '#1f77b4' : '#ff7f0e';
       ctx.fill();
       ctx.strokeStyle = '#ffffff';
       ctx.lineWidth = 1.5 * this.devicePixelRatio;

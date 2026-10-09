@@ -254,7 +254,7 @@ export class CartesianPlotRenderer {
       // Baseline line for Destructive Interference Threshold
       const yBase = this.valToY(pBase, pad, ph);
       ctx.save();
-      ctx.strokeStyle = 'rgba(6, 182, 212, 0.75)';
+      ctx.strokeStyle = '#ff7f0e'; // Matplotlib tab:orange
       ctx.lineWidth = 1.5 * dpr;
       ctx.setLineDash([4 * dpr, 4 * dpr]);
       ctx.beginPath();
@@ -263,11 +263,11 @@ export class CartesianPlotRenderer {
       ctx.stroke();
 
       // Right label for baseline
-      ctx.fillStyle = '#38bdf8';
+      ctx.fillStyle = '#ff7f0e';
       ctx.font = `${9 * dpr}px 'JetBrains Mono', monospace`;
       ctx.textAlign = 'right';
       ctx.textBaseline = 'bottom';
-      ctx.fillText(`P₀ Baseline: ${pBase.toFixed(1)} (Destructive Threshold)`, pad.left + pw - 6 * dpr, yBase - 3 * dpr);
+      ctx.fillText(`P₀ Baseline: ${pBase.toFixed(1)} W (Destructive Threshold)`, pad.left + pw - 6 * dpr, yBase - 3 * dpr);
       ctx.restore();
     } else {
       // Linear scale
@@ -454,9 +454,9 @@ export class CartesianPlotRenderer {
       }
     }
 
-    // Precise trace style: Sharp 1.75px cyan line
-    ctx.strokeStyle = '#00e5ff';
-    ctx.lineWidth = 1.75 * dpr;
+    // Precise trace style: Crisp Matplotlib tab:blue #1f77b4 line
+    ctx.strokeStyle = '#1f77b4';
+    ctx.lineWidth = 1.85 * dpr;
     ctx.stroke();
 
     ctx.restore();
@@ -468,7 +468,7 @@ export class CartesianPlotRenderer {
     const dpr = this.devicePixelRatio;
     ctx.save();
 
-    // 1. Peak Marker (M1)
+    // 1. Peak Marker (M1) - Matplotlib tab:green
     const peakDeg = metrics.mainBeamAngleDeg;
     // convert to current domain
     let displayPeakDeg = peakDeg;
@@ -486,16 +486,16 @@ export class CartesianPlotRenderer {
     ctx.lineTo(peakX - triSize, peakY - triSize * 1.5);
     ctx.lineTo(peakX + triSize, peakY - triSize * 1.5);
     ctx.closePath();
-    ctx.fillStyle = '#00e5ff';
+    ctx.fillStyle = '#2ca02c'; // Matplotlib tab:green
     ctx.fill();
 
     // Marker text callout
     ctx.font = `bold ${9 * dpr}px 'JetBrains Mono', monospace`;
-    ctx.fillStyle = '#00e5ff';
+    ctx.fillStyle = '#2ca02c';
     ctx.textAlign = 'center';
     ctx.fillText(`M1: 0.0dB @ ${displayPeakDeg.toFixed(1)}°`, peakX, peakY - triSize * 1.8);
 
-    // Peak marker is drawn above, no 3dB line
+    // Peak marker is drawn above
     ctx.restore();
   }
 
@@ -525,15 +525,15 @@ export class CartesianPlotRenderer {
     let textY = boxY + 5 * dpr;
     const textX = boxX + 8 * dpr;
 
-    ctx.fillStyle = '#38bdf8';
-    ctx.fillText(`CHANNEL 1: |AF(φ)|²`, textX, textY);
+    ctx.fillStyle = '#1f77b4'; // Matplotlib tab:blue
+    ctx.fillText(`PORT 1 (ARRAY PATTERN): |AF(φ)|²`, textX, textY);
 
     textY += lineH;
     ctx.fillStyle = '#94a3b8';
     ctx.fillText(`FREQ: 145.000 MHz (VHF)`, textX, textY);
 
     textY += lineH;
-    ctx.fillStyle = '#10b981';
+    ctx.fillStyle = '#2ca02c'; // Matplotlib tab:green
     ctx.fillText(`DIR: ${metrics.directivityDbi} dBi | F/B: ${metrics.frontToBackDb} dB`, textX, textY);
 
     ctx.restore();
@@ -585,10 +585,10 @@ export class CartesianPlotRenderer {
     ctx.stroke();
     ctx.setLineDash([]);
 
-    // Data intersection point
+    // Data intersection point (Matplotlib tab:blue)
     ctx.beginPath();
     ctx.arc(curX, traceY, 3.5 * dpr, 0, 2 * Math.PI);
-    ctx.fillStyle = '#00e5ff';
+    ctx.fillStyle = '#1f77b4';
     ctx.fill();
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 1 * dpr;
@@ -607,7 +607,7 @@ export class CartesianPlotRenderer {
     if (by < pad.top) by = traceY + 8 * dpr;
 
     ctx.fillStyle = 'rgba(10, 15, 29, 0.95)';
-    ctx.strokeStyle = '#00e5ff';
+    ctx.strokeStyle = '#1f77b4';
     ctx.lineWidth = 1 * dpr;
     ctx.strokeRect(bx, by, tw, th);
     ctx.fillRect(bx, by, tw, th);

@@ -15,6 +15,7 @@ import { AntennaSimulator } from './simulator.js?v=10';
 import { PolarPlotRenderer } from './polarPlot.js';
 import { WaveFieldRenderer } from './waveField.js?v=10';
 import { CartesianPlotRenderer } from './cartesianPlot.js';
+import { Wave1DPlotRenderer } from './wave1DPlot.js';
 
 class AntennaApp {
   constructor() {
@@ -106,11 +107,11 @@ class AntennaApp {
         if (this.inspPower) this.inspPower.textContent = `${hoverData.absPower} W/m²`;
         if (this.inspInterf) {
           if (hoverData.interferenceType === 'Destructive') {
-            this.inspInterf.innerHTML = `<span style="color: #38bdf8; font-weight: 700;">Destructive (-${hoverData.interferencePct}%)</span>`;
+            this.inspInterf.innerHTML = `<span style="color: #d62728; font-weight: 700;">Destructive (-${hoverData.interferencePct}%)</span>`;
           } else if (hoverData.interferenceType === 'Constructive') {
-            this.inspInterf.innerHTML = `<span style="color: #ec4899; font-weight: 700;">Constructive (+${hoverData.interferencePct}%)</span>`;
+            this.inspInterf.innerHTML = `<span style="color: #2ca02c; font-weight: 700;">Constructive (+${hoverData.interferencePct}%)</span>`;
           } else {
-            this.inspInterf.innerHTML = `<span style="color: #94a3b8;">Baseline P₀</span>`;
+            this.inspInterf.innerHTML = `<span style="color: #ff7f0e; font-weight: 600;">Baseline P₀</span>`;
           }
         }
       } else {
@@ -134,7 +135,7 @@ class AntennaApp {
     const densityCanvas = document.getElementById('canvasDensity');
     this.densityField = new WaveFieldRenderer(densityCanvas, this.sim, {
       displayMode: 'density',
-      colorTheme: 'turbo',
+      colorTheme: 'viridis',
       showBoundaries: true
     });
 
@@ -142,10 +143,29 @@ class AntennaApp {
     const waveCanvas = document.getElementById('canvasWave');
     this.instantaneousWave = new WaveFieldRenderer(waveCanvas, this.sim, {
       displayMode: 'wave',
-      colorTheme: 'cyberpunk',
+      colorTheme: 'coolwarm',
       showBoundaries: false,
       timeSpeed: 0.5
     });
+
+    // 5. Dedicated 1D Wave Interference Analyzer (Dual Sources)
+    const wave1DCanvas = document.getElementById('canvasWave1D');
+    if (wave1DCanvas) {
+      this.wave1DPlot = new Wave1DPlotRenderer(wave1DCanvas, this.sim, {
+        showCH1: true,
+        showCH2: true,
+        showSum: true,
+        showEnvelope: true,
+        domainMode: 'spatial'
+      });
+
+      // Synchronize 1D plot animation with 2D wave simulation loop
+      this.instantaneousWave.onFrame((simTime) => {
+        if (this.activeTab === 'wave1d' && this.wave1DPlot) {
+          this.wave1DPlot.render(simTime);
+        }
+      });
+    }
 
     // Initial resize
     setTimeout(() => {
@@ -429,6 +449,75 @@ class AntennaApp {
       });
     }
 
+    // 1D Wave Plot Channel Toggles
+    const btnToggleCH1 = document.getElementById('btnToggleCH1');
+    if (btnToggleCH1) {
+      btnToggleCH1.addEventListener('click', () => {
+        const state = this.wave1DPlot?.toggleChannel('ch1');
+        btnToggleCH1.classList.toggle('active', state?.showCH1);
+      });
+    }
+
+    const btnToggleCH2 = document.getElementById('btnToggleCH2');
+    if (btnToggleCH2) {
+      btnToggleCH2.addEventListener('click', () => {
+        const state = this.wave1DPlot?.toggleChannel('ch2');
+        btnToggleCH2.classList.toggle('active', state?.showCH2);
+      });
+    }
+
+    const btnToggleSum = document.getElementById('btnToggleSum');
+    if (btnToggleSum) {
+      btnToggleSum.addEventListener('click', () => {
+        const state = this.wave1DPlot?.toggleChannel('sum');
+        btnToggleSum.classList.toggle('active', state?.showSum);
+      });
+    }
+
+    const btnToggleEnv = document.getElementById('btnToggleEnv');
+    if (btnToggleEnv) {
+      btnToggleEnv.addEventListener('click', () => {
+        const state = this.wave1DPlot?.toggleChannel('env');
+        btnToggleEnv.classList.toggle('active', state?.showEnvelope);
+      });
+    }
+
+    // 1D Domain Selector (Spatial Cut vs Time Waveforms)
+    const select1DDomain = document.getElementById('select1DDomain');
+    const wave1DSubtitle = document.getElementById('wave1DSubtitle');
+    if (select1DDomain) {
+      select1DDomain.addEventListener('change', (e) => {
+        const mode = e.target.value;
+        if (this.wave1DPlot) this.wave1DPlot.setDomainMode(mode);
+        if (wave1DSubtitle) {
+          wave1DSubtitle.textContent = mode === 'spatial'
+            ? 'Spatial Cut along Array Axis (y = 0)'
+            : 'Excitation Signals at Feeds: E(t)';
+        }
+      });
+    }
+
+    // Wave Workspace Layout Mode Buttons (Dual 2D+1D, 2D Only, 1D Only)
+    const waveWorkspace = document.getElementById('waveWorkspace');
+    document.querySelectorAll('.layout-btn[data-layout]').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        const layout = btn.getAttribute('data-layout');
+        document.querySelectorAll('.layout-btn[data-layout]').forEach((b) => b.classList.remove('active'));
+        btn.classList.add('active');
+
+        if (waveWorkspace) {
+          waveWorkspace.classList.remove('layout-2d-only', 'layout-1d-only');
+          if (layout === '2d-only') waveWorkspace.classList.add('layout-2d-only');
+          else if (layout === '1d-only') waveWorkspace.classList.add('layout-1d-only');
+        }
+
+        setTimeout(() => {
+          if (this.instantaneousWave) this.instantaneousWave.resize();
+          if (this.wave1DPlot) this.wave1DPlot.resize();
+        }, 30);
+      });
+    });
+
     // Theory Modal
     if (this.btnTheoryModal && this.theoryModal) {
       this.btnTheoryModal.addEventListener('click', () => {
@@ -550,6 +639,9 @@ class AntennaApp {
     } else if (tab === 'wave') {
       document.getElementById('viewWave').classList.add('active');
       this.instantaneousWave.resize();
+    } else if (tab === 'wave1d') {
+      document.getElementById('viewWave1D').classList.add('active');
+      if (this.wave1DPlot) this.wave1DPlot.resize();
     }
   }
 
@@ -557,7 +649,11 @@ class AntennaApp {
     if (this.activeTab === 'polar') this.polarPlot.resize();
     else if (this.activeTab === 'cartesian') this.cartesianPlot.resize();
     else if (this.activeTab === 'density') this.densityField.resize();
-    else if (this.activeTab === 'wave') this.instantaneousWave.resize();
+    else if (this.activeTab === 'wave') {
+      this.instantaneousWave.resize();
+    } else if (this.activeTab === 'wave1d') {
+      if (this.wave1DPlot) this.wave1DPlot.resize();
+    }
   }
 
   updateAll() {
@@ -611,6 +707,10 @@ class AntennaApp {
     this.cartesianPlot.setPattern(pattern);
     if (this.densityField) this.densityField.setPattern(pattern);
     if (this.instantaneousWave) this.instantaneousWave.setPattern(pattern);
+    if (this.wave1DPlot) {
+      this.wave1DPlot.setSimulator(this.sim);
+      this.wave1DPlot.render(this.instantaneousWave?.simTime || 0);
+    }
   }
 
   exportVisualizationPNG() {
@@ -625,6 +725,8 @@ class AntennaApp {
       dataUrl = document.getElementById('canvasDensity').toDataURL('image/png');
     } else if (this.activeTab === 'wave') {
       dataUrl = document.getElementById('canvasWave').toDataURL('image/png');
+    } else if (this.activeTab === 'wave1d') {
+      dataUrl = document.getElementById('canvasWave1D').toDataURL('image/png');
     }
 
     if (dataUrl) {

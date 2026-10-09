@@ -265,17 +265,24 @@ export class WaveFieldRenderer {
     return { rReactive, rFar, D, lambda };
   }
 
+  onFrame(callback) {
+    this.onFrameCallback = callback;
+  }
+
   initLoop() {
     const loop = (now) => {
       const dt = (now - this.lastTimestamp) / 1000;
       this.lastTimestamp = now;
 
-      if (this.isPlaying && this.displayMode === 'wave') {
+      if (this.isPlaying) {
         const visualFreq = 1.8 * this.timeSpeed;
         this.simTime += dt * visualFreq;
       }
 
       this.renderFrame();
+      if (this.onFrameCallback) {
+        this.onFrameCallback(this.simTime);
+      }
       this.animationFrameId = requestAnimationFrame(loop);
     };
 
@@ -407,12 +414,33 @@ export class WaveFieldRenderer {
   mapColor(val, isDensity) {
     if (isDensity) {
       const t = Math.max(0, Math.min(1, val));
-      if (this.colorTheme === 'plasma') {
+      if (this.colorTheme === 'turbo') {
+        // High-contrast Thermal / Turbo colormap
+        if (t < 0.25) {
+          const f = t / 0.25;
+          return { r: Math.round(10 + 15 * f), g: Math.round(20 + 90 * f), b: Math.round(45 + 190 * f) };
+        } else if (t < 0.5) {
+          const f = (t - 0.25) / 0.25;
+          return { r: Math.round(25 + 5 * f), g: Math.round(110 + 120 * f), b: Math.round(235 - 135 * f) };
+        } else if (t < 0.75) {
+          const f = (t - 0.5) / 0.25;
+          return { r: Math.round(30 + 215 * f), g: Math.round(230 + 15 * f), b: Math.round(100 - 85 * f) };
+        } else {
+          const f = (t - 0.75) / 0.25;
+          return { r: Math.round(245 + 10 * f), g: Math.round(245 - 180 * f), b: Math.round(15 + 15 * f) };
+        }
+      } else if (this.colorTheme === 'plasma') {
         return interpolateStops(PLASMA_STOPS, t);
       } else if (this.colorTheme === 'inferno') {
         return interpolateStops(INFERNO_STOPS, t);
+      } else if (this.colorTheme === 'coolwarm') {
+        return {
+          r: Math.round(11 + 225 * t),
+          g: Math.round(16 + 65 * t),
+          b: Math.round(28 + 195 * (1 - t))
+        };
       } else {
-        // Default: Matplotlib Viridis
+        // Default: Scientific Viridis
         return interpolateStops(VIRIDIS_STOPS, t);
       }
     } else {
@@ -422,21 +450,25 @@ export class WaveFieldRenderer {
         return interpolateStops(VIRIDIS_STOPS, (v + 1) * 0.5);
       } else if (this.colorTheme === 'plasma') {
         return interpolateStops(PLASMA_STOPS, (v + 1) * 0.5);
+      } else if (this.colorTheme === 'inferno') {
+        return interpolateStops(INFERNO_STOPS, (v + 1) * 0.5);
+      } else if (this.colorTheme === 'turbo') {
+        return interpolateStops(VIRIDIS_STOPS, (v + 1) * 0.5);
       } else {
-        // Matplotlib CoolWarm (Diverging: Blue for negative, Dark neutral for zero, Red for positive)
+        // Matplotlib / IEEE CoolWarm (Diverging: Scientific Blue for negative, Neutral slate for zero, Crimson Red for positive)
         if (v < 0) {
-          const t = -v; // 0 to 1
+          const t = -v; // 0 (zero field) to 1 (negative peak)
           return {
-            r: Math.round(15 + 44 * t),
-            g: Math.round(20 + 56 * t),
-            b: Math.round(30 + 162 * t)
+            r: Math.round(11 + 26 * t),
+            g: Math.round(16 + 83 * t),
+            b: Math.round(28 + 207 * t)
           };
         } else {
-          const t = v; // 0 to 1
+          const t = v; // 0 (zero field) to 1 (positive peak)
           return {
-            r: Math.round(15 + 165 * t),
-            g: Math.round(20 - 10 * t),
-            b: Math.round(30 + 8 * t)
+            r: Math.round(11 + 215 * t),
+            g: Math.round(16 + 40 * t),
+            b: Math.round(28 + 15 * t)
           };
         }
       }
