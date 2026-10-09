@@ -534,7 +534,8 @@ export class CartesianPlotRenderer {
 
     textY += lineH;
     ctx.fillStyle = '#2ca02c'; // Matplotlib tab:green
-    ctx.fillText(`DIR: ${metrics.directivityDbi} dBi | F/B: ${metrics.frontToBackDb} dB`, textX, textY);
+    const dirStr = metrics.directivityDbi ?? (this.cachedPattern?.directivity3DdBi !== undefined ? this.cachedPattern.directivity3DdBi.toFixed(2) : '0.00');
+    ctx.fillText(`DIR: ${dirStr} dBi | F/B: ${metrics.frontToBackDb} dB`, textX, textY);
 
     ctx.restore();
   }

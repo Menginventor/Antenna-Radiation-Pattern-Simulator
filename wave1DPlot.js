@@ -28,14 +28,75 @@ export class Wave1DPlotRenderer {
     // Mode: 'spatial' (along X-axis) or 'time' (oscilloscope waveform at feeds)
     this.domainMode = options.domainMode ?? 'spatial';
 
-    // Interactive hover
+    // Interactive hover & Pan / Zoom
     this.hoverPoint = null;
     this.devicePixelRatio = window.devicePixelRatio || 1;
+
+    // Zoom & Pan state
+    this.zoomLevel = options.zoomLevel ?? 1.0;
+    this.panX = options.panX ?? 0;
+    this.isDragging = false;
+    this.dragStartX = 0;
+    this.panStartX = 0;
 
     // Margins for technical graticule
     this.padding = { top: 28, right: 36, bottom: 32, left: 54 };
 
     this.initEvents();
+  }
+
+  // Zoom controls
+  zoomIn() {
+    const dpr = this.devicePixelRatio;
+    const pad = {
+      left: this.padding.left * dpr,
+      right: this.padding.right * dpr
+    };
+    const pw = this.canvas.width - pad.left - pad.right;
+    this.zoomAt(pad.left + pw / 2, 1.35);
+  }
+
+  zoomOut() {
+    const dpr = this.devicePixelRatio;
+    const pad = {
+      left: this.padding.left * dpr,
+      right: this.padding.right * dpr
+    };
+    const pw = this.canvas.width - pad.left - pad.right;
+    this.zoomAt(pad.left + pw / 2, 1 / 1.35);
+  }
+
+  resetZoom() {
+    this.zoomLevel = 1.0;
+    this.panX = 0;
+    this.render(this.lastSimTime || 0);
+  }
+
+  zoomAt(canvasPixelX, factor) {
+    const dpr = this.devicePixelRatio;
+    const pad = {
+      left: this.padding.left * dpr,
+      right: this.padding.right * dpr
+    };
+    const pw = this.canvas.width - pad.left - pad.right;
+    if (pw <= 10) return;
+
+    const lambda = this.sim.wavelength;
+    const d = this.sim.distanceMeters;
+    const baseSpanLambda = Math.max(2.5, (d / lambda) * 1.6 + 0.8);
+
+    const oldSpan = (2 * baseSpanLambda * lambda) / this.zoomLevel;
+    const oldXMin = this.panX - oldSpan / 2;
+    const frac = Math.max(0, Math.min(1, (canvasPixelX - pad.left) / pw));
+    const targetWorldX = oldXMin + frac * oldSpan;
+
+    const newZoom = Math.max(0.05, Math.min(8.0, this.zoomLevel * factor));
+    const newSpan = (2 * baseSpanLambda * lambda) / newZoom;
+
+    const newXMin = targetWorldX - frac * newSpan;
+    this.panX = newXMin + newSpan / 2;
+    this.zoomLevel = newZoom;
+    this.render(this.lastSimTime || 0);
   }
 
   setSimulator(sim) {
@@ -66,7 +127,21 @@ export class Wave1DPlotRenderer {
       const rect = this.canvas.getBoundingClientRect();
       const x = (e.clientX - rect.left) * (this.canvas.width / rect.width);
       const y = (e.clientY - rect.top) * (this.canvas.height / rect.height);
-      this.hoverPoint = { x, y };
+
+      if (this.isDragging) {
+        this.hoverPoint = null;
+        const pw = rect.width - (this.padding.left + this.padding.right);
+        if (pw > 10) {
+          const dx = e.clientX - this.dragStartX;
+          const lambda = this.sim.wavelength;
+          const d = this.sim.distanceMeters;
+          const baseSpanLambda = Math.max(2.5, (d / lambda) * 1.6 + 0.8);
+          const span = (2 * baseSpanLambda * lambda) / this.zoomLevel;
+          this.panX = this.panStartX - (dx / pw) * span;
+        }
+      } else {
+        this.hoverPoint = { x, y };
+      }
       this.render(this.lastSimTime || 0);
     });
 
@@ -74,6 +149,76 @@ export class Wave1DPlotRenderer {
       this.hoverPoint = null;
       this.render(this.lastSimTime || 0);
     });
+
+    this.canvas.addEventListener('mousedown', (e) => {
+      if (e.button !== 0) return;
+      this.isDragging = true;
+      this.dragStartX = e.clientX;
+      this.panStartX = this.panX;
+      this.canvas.style.cursor = 'grabbing';
+      this.hoverPoint = null;
+    });
+
+    window.addEventListener('mouseup', () => {
+      if (this.isDragging) {
+        this.isDragging = false;
+        this.canvas.style.cursor = 'crosshair';
+        this.render(this.lastSimTime || 0);
+      }
+    });
+
+    this.canvas.addEventListener('wheel', (e) => {
+      e.preventDefault();
+      const rect = this.canvas.getBoundingClientRect();
+      const mouseCanvasX = (e.clientX - rect.left) * (this.canvas.width / rect.width);
+      const zoomFactor = e.deltaY < 0 ? 1.25 : 0.8;
+      this.zoomAt(mouseCanvasX, zoomFactor);
+    }, { passive: false });
+
+    this.canvas.addEventListener('dblclick', () => {
+      this.resetZoom();
+    });
+
+    // Touch support for pinch and drag
+    let touchStartDist = 0;
+    let touchStartZoom = 1.0;
+    let touchStartX = 0;
+    let touchStartPan = 0;
+
+    this.canvas.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 1) {
+        touchStartX = e.touches[0].clientX;
+        touchStartPan = this.panX;
+      } else if (e.touches.length === 2) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        touchStartDist = Math.hypot(dx, dy);
+        touchStartZoom = this.zoomLevel;
+      }
+    }, { passive: true });
+
+    this.canvas.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 1) {
+        const rect = this.canvas.getBoundingClientRect();
+        const pw = rect.width - (this.padding.left + this.padding.right);
+        if (pw > 10) {
+          const dx = e.touches[0].clientX - touchStartX;
+          const lambda = this.sim.wavelength;
+          const d = this.sim.distanceMeters;
+          const baseSpanLambda = Math.max(2.5, (d / lambda) * 1.6 + 0.8);
+          const span = (2 * baseSpanLambda * lambda) / this.zoomLevel;
+          this.panX = touchStartPan - (dx / pw) * span;
+          this.render(this.lastSimTime || 0);
+        }
+      } else if (e.touches.length === 2 && touchStartDist > 0) {
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.hypot(dx, dy);
+        const scale = dist / touchStartDist;
+        this.zoomLevel = Math.max(0.05, Math.min(8.0, touchStartZoom * scale));
+        this.render(this.lastSimTime || 0);
+      }
+    }, { passive: true });
   }
 
   resize() {
@@ -130,10 +275,11 @@ export class Wave1DPlotRenderer {
     const lambda = sim.wavelength;
     const d = sim.distanceMeters;
 
-    // View range along X-axis: span symmetric around center, covering at least ±2.5 lambda or 1.5*d
-    const spanLambda = Math.max(2.5, (d / lambda) * 1.6 + 0.8);
-    const xMin = -spanLambda * lambda;
-    const xMax = spanLambda * lambda;
+    // View range along X-axis: scaled by zoomLevel and offset by panX
+    const baseSpanLambda = Math.max(2.5, (d / lambda) * 1.6 + 0.8);
+    const spanLambda = baseSpanLambda / this.zoomLevel;
+    const xMin = this.panX - spanLambda * lambda;
+    const xMax = this.panX + spanLambda * lambda;
     const xSpan = xMax - xMin;
 
     const e1x = sim.elem1.x; // -d/2
@@ -167,8 +313,8 @@ export class Wave1DPlotRenderer {
     // Core smoothing to avoid infinite spike at source center
     const coreEps = 0.08 * lambda;
 
-    // Precalculate samples across width
-    const numSamples = Math.min(600, Math.floor(pw));
+    // Precalculate samples across width (high resolution across zoom)
+    const numSamples = Math.max(600, Math.min(1200, Math.floor(pw * 1.5)));
     const ptsX = new Float32Array(numSamples);
     const ptsE1 = new Float32Array(numSamples);
     const ptsE2 = new Float32Array(numSamples);
@@ -315,12 +461,12 @@ export class Wave1DPlotRenderer {
     const yMax = Math.max(1.8, Math.ceil((a1 + a2) * 1.25 * 2) / 2);
     const worldToCanvasY = (v) => pad.top + ph / 2 - (v / yMax) * (ph / 2);
 
-    // Number of periods shown: 2 complete cycles (0 to 4*PI)
+    // Number of periods shown: 2 complete cycles scaled by zoom
     const omega = 2 * Math.PI;
-    const tSpan = 2.0; // 2 normalized RF periods
+    const tSpan = 2.0 / this.zoomLevel;
 
     // 1. Graticule
-    this.drawGraticuleTime(ctx, pad, pw, ph, yMax, dpr);
+    this.drawGraticuleTime(ctx, pad, pw, ph, yMax, dpr, tSpan);
 
     const numSamples = Math.min(600, Math.floor(pw));
     const ptsX = new Float32Array(numSamples);
@@ -437,16 +583,22 @@ export class Wave1DPlotRenderer {
     // Zero label
     ctx.fillText('0.0', pad.left - 6 * dpr, centerY);
 
-    // Vertical spatial grid lines every 0.5 lambda or 1.0 lambda
+    // Vertical spatial grid lines with adaptive step based on zoom
     const xSpan = xMax - xMin;
-    const lStep = xSpan / lambda > 6 ? 1.0 : 0.5;
+    const totalLambdas = xSpan / lambda;
+    let lStep = 0.5;
+    if (totalLambdas > 40) lStep = 10.0;
+    else if (totalLambdas > 20) lStep = 5.0;
+    else if (totalLambdas > 10) lStep = 2.0;
+    else if (totalLambdas > 5) lStep = 1.0;
+
     const lMin = Math.ceil(xMin / (lStep * lambda)) * lStep;
     const lMax = Math.floor(xMax / (lStep * lambda)) * lStep;
 
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
 
-    for (let l = lMin; l <= lMax; l += lStep) {
+    for (let l = lMin; l <= lMax + 1e-5; l += lStep) {
       const xMeters = l * lambda;
       const cx = pad.left + ((xMeters - xMin) / xSpan) * pw;
 
@@ -458,10 +610,19 @@ export class Wave1DPlotRenderer {
       ctx.lineTo(cx, pad.top + ph);
       ctx.stroke();
 
-      const label = Math.abs(l) < 1e-4 ? '0' : `${l > 0 ? '+' : ''}${l.toFixed(1)}λ`;
+      const label = Math.abs(l) < 1e-4 ? '0' : `${l > 0 ? '+' : ''}${Number(l.toFixed(1))}λ`;
       ctx.fillStyle = '#64748b';
       ctx.fillText(label, cx, pad.top + ph + 5 * dpr);
     }
+
+    // Technical graticule status overlay (top right)
+    ctx.save();
+    ctx.font = `${9 * dpr}px 'JetBrains Mono', monospace`;
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'right';
+    const zoomText = `ZOOM: ${this.zoomLevel.toFixed(2)}×  |  SPAN: ±${((xSpan / 2) / lambda).toFixed(1)}λ`;
+    ctx.fillText(zoomText, pad.left + pw - 6 * dpr, pad.top + 12 * dpr);
+    ctx.restore();
 
     // Y-Axis Unit Header
     ctx.save();
@@ -474,7 +635,7 @@ export class Wave1DPlotRenderer {
     ctx.restore();
   }
 
-  drawGraticuleTime(ctx, pad, pw, ph, yMax, dpr) {
+  drawGraticuleTime(ctx, pad, pw, ph, yMax, dpr, tSpan = 2.0) {
     ctx.save();
     ctx.fillStyle = '#070c17';
     ctx.fillRect(pad.left, pad.top, pw, ph);
@@ -491,8 +652,12 @@ export class Wave1DPlotRenderer {
     ctx.lineTo(pad.left + pw, centerY);
     ctx.stroke();
 
-    // Time cycle grid (0, T/2, T, 3T/2, 2T)
-    const divisions = 8;
+    // Time cycle grid: pick sensible division step based on tSpan
+    let tStep = 0.25;
+    if (tSpan > 8) tStep = 2.0;
+    else if (tSpan > 4) tStep = 1.0;
+    else if (tSpan > 2) tStep = 0.5;
+
     ctx.strokeStyle = '#0e1626';
     ctx.lineWidth = 1 * dpr;
     ctx.font = `${9.5 * dpr}px 'JetBrains Mono', monospace`;
@@ -500,16 +665,23 @@ export class Wave1DPlotRenderer {
     ctx.textAlign = 'center';
     ctx.textBaseline = 'top';
 
-    for (let i = 0; i <= divisions; i++) {
-      const cx = pad.left + (i / divisions) * pw;
+    for (let t = 0; t <= tSpan + 1e-5; t += tStep) {
+      const cx = pad.left + (t / tSpan) * pw;
       ctx.beginPath();
       ctx.moveTo(cx, pad.top);
       ctx.lineTo(cx, pad.top + ph);
       ctx.stroke();
 
-      const periodFrac = i / 4;
-      ctx.fillText(`${periodFrac}T`, cx, pad.top + ph + 5 * dpr);
+      ctx.fillText(`${Number(t.toFixed(2))}T`, cx, pad.top + ph + 5 * dpr);
     }
+
+    // Status overlay
+    ctx.save();
+    ctx.font = `${9 * dpr}px 'JetBrains Mono', monospace`;
+    ctx.fillStyle = '#64748b';
+    ctx.textAlign = 'right';
+    ctx.fillText(`ZOOM: ${this.zoomLevel.toFixed(2)}×  |  TIMEBASE: ${tSpan.toFixed(1)}T`, pad.left + pw - 6 * dpr, pad.top + 12 * dpr);
+    ctx.restore();
 
     ctx.restore();
   }

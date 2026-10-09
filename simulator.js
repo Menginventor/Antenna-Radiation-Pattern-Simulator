@@ -226,7 +226,7 @@ export class AntennaSimulator {
           peaks.push({
             index: i,
             angleRad: angles[i],
-            angleDeg: (angles[i] * 180) / Math.PI,
+            angleDeg: Number(((angles[i] * 180) / Math.PI).toFixed(1)),
             val: curr,
             db: clampedDb[i],
             absMag: fieldMagnitudes ? fieldMagnitudes[i] : curr,
@@ -241,7 +241,7 @@ export class AntennaSimulator {
           nulls.push({
             index: i,
             angleRad: angles[i],
-            angleDeg: (angles[i] * 180) / Math.PI,
+            angleDeg: Number(((angles[i] * 180) / Math.PI).toFixed(1)),
             val: curr,
             db: clampedDb[i],
             absMag: fieldMagnitudes ? fieldMagnitudes[i] : curr,
@@ -322,7 +322,8 @@ export class AntennaSimulator {
     }
 
     return {
-      mainBeamAngleDeg: mainLobe.angleDeg,
+      directivityDbi: Number(directivity3DdBi.toFixed(2)),
+      mainBeamAngleDeg: Number(mainLobe.angleDeg.toFixed(1)),
       mainBeamDb: mainLobe.db,
       hpbwDeg: hpbwDeg ? Number(hpbwDeg.toFixed(1)) : 'N/A',
       sideLobeLevelDb: sideLobeLevelDb !== null ? Number(sideLobeLevelDb.toFixed(1)) : 'None',

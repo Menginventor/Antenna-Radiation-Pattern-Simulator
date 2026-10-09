@@ -1138,10 +1138,18 @@ canvas.interactive-canvas {
   overflow: hidden;
 }
 
+.wave-1d-zoom-group {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+}
+
 .wave-1d-canvas {
   width: 100%;
   height: 100%;
   display: block;
+  cursor: crosshair;
+  user-select: none;
 }
 
 /* ==========================================================================

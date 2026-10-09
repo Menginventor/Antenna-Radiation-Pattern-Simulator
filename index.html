@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Main Styling -->
-  <link rel="stylesheet" href="style.css?v=19">
+  <link rel="stylesheet" href="style.css?v=20">
 </head>
 <body>
   <!-- Top Instrument Status & Global Header Bar -->
@@ -21,10 +21,6 @@
       <span class="brand-icon-sm">📡</span>
       <span class="brand-title-compact">Antenna Radiation Pattern Simulator</span>
       <span class="instrument-model-tag">ARPS-145</span>
-      <div class="instrument-status-leds">
-        <span class="led-indicator led-active"><span class="led-dot"></span>RUN</span>
-        <span class="led-indicator"><span class="led-dot led-blue"></span>VHF 145 MHz</span>
-      </div>
     </div>
     <div class="header-actions">
       <button class="btn btn-secondary btn-sm" id="btnTheoryModal" title="Theory, Mathematical Derivations & Array Calibrations">
@@ -255,11 +251,11 @@
         <div class="tabs-nav">
           <button class="tab-btn active" data-tab="polar">
             <span class="tab-indicator"></span>
-            POLAR [AF]
+            POLAR
           </button>
           <button class="tab-btn" data-tab="cartesian">
             <span class="tab-indicator"></span>
-            RECT [CARTESIAN]
+            Cartesian
           </button>
           <button class="tab-btn" data-tab="wave">
             <span class="tab-indicator"></span>
@@ -267,7 +263,7 @@
           </button>
           <button class="tab-btn" data-tab="wave1d">
             <span class="tab-indicator"></span>
-            1D WAVE [INTERF]
+            1D WAVE
           </button>
         </div>
 
@@ -398,10 +394,13 @@
                   <span class="ch-badge env-badge">ENV</span> ±Envelope
                 </button>
                 <div class="pane-separator-v"></div>
-                <select id="select1DDomain" class="select-dropdown-sm" title="Switch between X-Axis spatial interference cut and time-domain feed waveforms">
-                  <option value="spatial" selected>Spatial Cut (X-Axis)</option>
-                  <option value="time">Signal Waveforms (Time)</option>
-                </select>
+                <div class="wave-1d-zoom-group">
+                  <span class="overlay-label">Zoom:</span>
+                  <button class="btn btn-secondary btn-sm" id="btnWave1DZoomOut" title="Zoom Out (Show wider range)">🔍 -</button>
+                  <button class="btn btn-secondary btn-sm" id="btnWave1DZoomIn" title="Zoom In">🔍 +</button>
+                  <button class="chip-btn" id="btnWave1DReset" title="Reset Zoom & Pan">Reset</button>
+                </div>
+                <span class="hint-text">Wheel to Zoom • Drag to Pan</span>
               </div>
             </div>
             <div class="canvas-wrapper-1d">
@@ -509,6 +508,6 @@
   </div>
 
   <!-- Main Application Logic -->
-  <script type="module" src="app.js?v=20"></script>
+  <script type="module" src="app.js?v=24"></script>
 </body>
 </html>

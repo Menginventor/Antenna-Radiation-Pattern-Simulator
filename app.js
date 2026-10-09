@@ -464,18 +464,25 @@ class AntennaApp {
       });
     }
 
-    // 1D Domain Selector (Spatial Cut vs Time Waveforms)
-    const select1DDomain = document.getElementById('select1DDomain');
-    const wave1DSubtitle = document.getElementById('wave1DSubtitle');
-    if (select1DDomain) {
-      select1DDomain.addEventListener('change', (e) => {
-        const mode = e.target.value;
-        if (this.wave1DPlot) this.wave1DPlot.setDomainMode(mode);
-        if (wave1DSubtitle) {
-          wave1DSubtitle.textContent = mode === 'spatial'
-            ? 'Spatial Cut along Array Axis (y = 0)'
-            : 'Excitation Signals at Feeds: E(t)';
-        }
+    // 1D Wave Zoom & Pan Controls
+    const btnWave1DZoomOut = document.getElementById('btnWave1DZoomOut');
+    if (btnWave1DZoomOut) {
+      btnWave1DZoomOut.addEventListener('click', () => {
+        if (this.wave1DPlot) this.wave1DPlot.zoomOut();
+      });
+    }
+
+    const btnWave1DZoomIn = document.getElementById('btnWave1DZoomIn');
+    if (btnWave1DZoomIn) {
+      btnWave1DZoomIn.addEventListener('click', () => {
+        if (this.wave1DPlot) this.wave1DPlot.zoomIn();
+      });
+    }
+
+    const btnWave1DReset = document.getElementById('btnWave1DReset');
+    if (btnWave1DReset) {
+      btnWave1DReset.addEventListener('click', () => {
+        if (this.wave1DPlot) this.wave1DPlot.resetZoom();
       });
     }
 
@@ -652,9 +659,12 @@ class AntennaApp {
 
     // 3. Update Metrics Dashboard
     const m = pattern.metrics;
-    if (this.metricDirectivity) this.metricDirectivity.textContent = `${m.directivityDbi} dBi`;
-    if (this.metricDirectivityLin) this.metricDirectivityLin.textContent = `${pattern.directivity3D.toFixed(2)}× isotropic`;
-    if (this.metricMainBeam) this.metricMainBeam.textContent = `${m.mainBeamAngleDeg}°`;
+    const directivityDbiVal = m.directivityDbi ?? (pattern.directivity3DdBi !== undefined ? pattern.directivity3DdBi.toFixed(2) : (pattern.directivity2DdBi !== undefined ? pattern.directivity2DdBi.toFixed(2) : '0.00'));
+    const directivityLinVal = (pattern.directivity3D ?? pattern.directivity2D ?? 1.0).toFixed(2);
+    if (this.metricDirectivity) this.metricDirectivity.textContent = `${directivityDbiVal} dBi`;
+    if (this.metricDirectivityLin) this.metricDirectivityLin.textContent = `${directivityLinVal}× isotropic`;
+    const mainBeamDeg = m.mainBeamAngleDeg !== undefined ? Number(m.mainBeamAngleDeg).toFixed(1) : '90.0';
+    if (this.metricMainBeam) this.metricMainBeam.textContent = `${mainBeamDeg}°`;
 
     if (this.metricMainBeamType) {
       if (Math.abs(m.mainBeamAngleDeg - 90) < 5 || Math.abs(m.mainBeamAngleDeg - 270) < 5) {
@@ -676,7 +686,7 @@ class AntennaApp {
     if (this.metricSLL) this.metricSLL.textContent = m.sideLobeLevelDb !== 'None' ? `${m.sideLobeLevelDb} dB` : 'None';
     if (this.metricSLLSub) {
       this.metricSLLSub.textContent = m.sideLobeLevelDb !== 'None'
-        ? (m.sideLobeAngleDeg !== null ? `Peak at ${m.sideLobeAngleDeg}°` : 'Peak secondary lobe')
+        ? (m.sideLobeAngleDeg !== null ? `Peak at ${Number(m.sideLobeAngleDeg).toFixed(1)}°` : 'Peak secondary lobe')
         : 'No secondary lobes';
     }
 

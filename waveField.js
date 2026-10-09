@@ -620,7 +620,7 @@ export class WaveFieldRenderer {
     ctx.textAlign = isRight ? 'left' : 'right';
     const tagOffset = 10 * dpr;
     ctx.fillText(
-      `Main Beam: ${beamAngleDeg}°`,
+      `Main Beam: ${Number(beamAngleDeg).toFixed(1)}°`,
       endX + (isRight ? tagOffset : -tagOffset),
       endY - 4 * dpr
     );
