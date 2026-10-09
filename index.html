@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Interactive 2-Point Source Antenna Radiation Pattern & Interference Simulator. Calculate Array Factor, Polar/Cartesian plots, 3D radiation lobes, and wave propagation in real-time.">
+  <title>Antenna Radiation Pattern Simulator | 2-Point Phased Array</title>
+
+  <!-- Google Fonts: Outfit & JetBrains Mono -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+
+  <!-- Main Styling -->
+  <link rel="stylesheet" href="style.css?v=19">
+</head>
+<body>
+  <!-- Top Unified Control Bar: Brand + Presets -->
+  <header class="preset-bar">
+    <div class="app-brand-compact">
+      <span class="brand-icon-sm">📡</span>
+      <span class="brand-title-compact">Antenna Simulator</span>
+    </div>
+    <div class="preset-separator"></div>
+    <span class="preset-title">Presets:</span>
+    <button class="preset-btn active" data-preset="broadside" title="Broadside Array: Max radiation perpendicular to array axis (90° and 270°)">
+      <svg class="preset-polar-icon" width="20" height="20" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="12" stroke="currentColor" stroke-opacity="0.25" stroke-dasharray="2 2"/>
+        <line x1="14" y1="2" x2="14" y2="26" stroke="currentColor" stroke-opacity="0.2"/>
+        <line x1="2" y1="14" x2="26" y2="14" stroke="currentColor" stroke-opacity="0.2"/>
+        <!-- Figure-8 Broadside Lobes (90° & 270°) -->
+        <path d="M 14.0 14.0 C 17.5 13.0 18.5 9.0 18.1 7.0 C 17.5 3.5 14.8 2.5 14.0 2.5 C 13.2 2.5 10.5 3.5 9.9 7.0 C 9.5 9.0 10.5 13.0 14.0 14.0 C 10.5 15.0 9.5 19.0 9.9 21.0 C 10.5 24.5 13.2 25.5 14.0 25.5 C 14.8 25.5 17.5 24.5 18.1 21.0 C 18.5 19.0 17.5 15.0 14.0 14.0 Z" fill="currentColor" fill-opacity="0.32" stroke="currentColor" stroke-width="1.6"/>
+        <circle cx="14" cy="14" r="1.5" fill="currentColor"/>
+      </svg>
+      <span>Broadside</span>
+    </button>
+    <button class="preset-btn" data-preset="steered45" title="Steered 45° Beam: Main beam directed towards 45°">
+      <svg class="preset-polar-icon" width="20" height="20" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="12" stroke="currentColor" stroke-opacity="0.25" stroke-dasharray="2 2"/>
+        <line x1="14" y1="2" x2="14" y2="26" stroke="currentColor" stroke-opacity="0.2"/>
+        <line x1="2" y1="14" x2="26" y2="14" stroke="currentColor" stroke-opacity="0.2"/>
+        <!-- Steered 45° Beam with Secondary Rear Lobe -->
+        <path d="M 24.3 14.0 C 24.2 10.0 22.8 6.0 19.5 4.6 C 16.0 3.8 14.2 7.5 13.8 13.4 C 13.2 11.5 10.5 9.1 7.5 9.1 C 4.5 9.1 3.7 11.5 3.7 14.0 C 3.7 16.5 4.5 18.9 7.5 18.9 C 10.5 18.9 13.2 16.5 13.8 14.6 C 14.2 20.5 16.0 24.2 19.5 23.4 C 22.8 22.0 24.2 18.0 24.3 14.0 Z" fill="currentColor" fill-opacity="0.32" stroke="currentColor" stroke-width="1.6"/>
+        <circle cx="14" cy="14" r="1.5" fill="currentColor"/>
+      </svg>
+      <span>Steered 45° Beam</span>
+    </button>
+    <button class="preset-btn" data-preset="grating" title="Grating Lobes: Multiple spatial lobes for d=1.5λ">
+      <svg class="preset-polar-icon" width="20" height="20" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="12" stroke="currentColor" stroke-opacity="0.25" stroke-dasharray="2 2"/>
+        <line x1="14" y1="2" x2="14" y2="26" stroke="currentColor" stroke-opacity="0.2"/>
+        <line x1="2" y1="14" x2="26" y2="14" stroke="currentColor" stroke-opacity="0.2"/>
+        <!-- 6-Lobed Grating Pattern -->
+        <path d="M 14.0 14.0 C 16.5 13.2 21.0 9.0 21.7 5.5 C 19.5 5.5 16.5 8.5 14.5 12.7 C 15.2 6.5 15.0 3.5 14.0 2.5 C 13.0 3.5 12.8 6.5 13.5 12.7 C 11.5 8.5 8.5 5.5 6.3 5.5 C 7.0 9.0 11.5 13.2 14.0 14.0 C 11.5 14.8 7.0 19.0 6.3 22.5 C 8.5 22.5 11.5 19.5 13.5 15.3 C 12.8 21.5 13.0 24.5 14.0 25.5 C 15.0 24.5 15.2 21.5 14.5 15.3 C 16.5 19.5 19.5 22.5 21.7 22.5 C 21.0 19.0 16.5 14.8 14.0 14.0 Z" fill="currentColor" fill-opacity="0.32" stroke="currentColor" stroke-width="1.6"/>
+        <circle cx="14" cy="14" r="1.5" fill="currentColor"/>
+      </svg>
+      <span>Grating Lobes</span>
+    </button>
+    <button class="preset-btn" data-preset="cardioid" title="Cardioid Pattern: Unidirectional heart-shaped beam pointing Front (Peak at 0° [+X], Null at 180° [-X])">
+      <svg class="preset-polar-icon" width="20" height="20" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="12" stroke="currentColor" stroke-opacity="0.25" stroke-dasharray="2 2"/>
+        <line x1="14" y1="2" x2="14" y2="26" stroke="currentColor" stroke-opacity="0.2"/>
+        <line x1="2" y1="14" x2="26" y2="14" stroke="currentColor" stroke-opacity="0.2"/>
+        <!-- Cardioid Lobe pointing Front (+X, 0°) with rear null at 180° -->
+        <path d="M 14.0 14.0 C 11.8 12.0 11.8 9.0 14.0 5.9 C 18.0 4.5 23.0 6.5 25.5 14.0 C 23.0 21.5 18.0 23.5 14.0 22.1 C 11.8 19.0 11.8 16.0 14.0 14.0 Z" fill="currentColor" fill-opacity="0.32" stroke="currentColor" stroke-width="1.6"/>
+        <circle cx="14" cy="14" r="1.5" fill="currentColor"/>
+      </svg>
+      <span>Cardioid Pattern</span>
+    </button>
+    <button class="preset-btn" data-preset="antiPhase" title="Out-of-Phase Dipole Pair: Figure-8 with broadside null (0° & 180°)">
+      <svg class="preset-polar-icon" width="20" height="20" viewBox="0 0 28 28" fill="none">
+        <circle cx="14" cy="14" r="12" stroke="currentColor" stroke-opacity="0.25" stroke-dasharray="2 2"/>
+        <line x1="14" y1="2" x2="14" y2="26" stroke="currentColor" stroke-opacity="0.2"/>
+        <line x1="2" y1="14" x2="26" y2="14" stroke="currentColor" stroke-opacity="0.2"/>
+        <!-- Horizontal Figure-8 Lobe (0° & 180°) -->
+        <path d="M 14.0 14.0 C 13.0 10.5 9.0 9.5 7.0 9.9 C 3.5 10.5 2.5 13.2 2.5 14.0 C 2.5 14.8 3.5 17.5 7.0 18.1 C 9.0 18.5 13.0 17.5 14.0 14.0 C 15.0 17.5 19.0 18.5 21.0 18.1 C 24.5 17.5 25.5 14.8 25.5 14.0 C 25.5 13.2 24.5 10.5 21.0 9.9 C 19.0 9.5 15.0 10.5 14.0 14.0 Z" fill="currentColor" fill-opacity="0.32" stroke="currentColor" stroke-width="1.6"/>
+        <circle cx="14" cy="14" r="1.5" fill="currentColor"/>
+      </svg>
+      <span>Out-of-Phase Dipole</span>
+    </button>
+  </header>
+
+  <!-- Main Grid Layout -->
+  <main class="app-container">
+    <!-- Left Column: Controls & Parameters -->
+    <aside class="controls-sidebar">
+      <!-- Element 1 Card: Fixed Reference Source -->
+      <div class="glass-card source-1-card">
+        <div class="card-title">
+          <h2>
+            <span style="color: var(--accent-cyan);">●</span> Source 1 (Reference)
+          </h2>
+          <span class="tag" style="background: rgba(0, 242, 254, 0.15); color: var(--accent-cyan);">FIXED REFERENCE</span>
+        </div>
+
+        <div class="reference-source-box">
+          <div class="ref-param-row">
+            <span class="label-title">Magnitude (A₁)</span>
+            <span class="ref-fixed-val">1.00 <span class="unit-label">V/m (Fixed)</span></span>
+          </div>
+          <div class="ref-param-row">
+            <span class="label-title">Phase (α₁)</span>
+            <span class="ref-fixed-val">0.0° <span class="unit-label">deg (0° Reference)</span></span>
+          </div>
+          <div class="ref-param-row">
+            <span class="label-title">Array Position</span>
+            <span class="ref-fixed-val" id="refSource1Pos">x = -d/2 (Rear, -0.517 m)</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Element 2 Card: Variable Source -->
+      <div class="glass-card source-2-card">
+        <div class="card-title">
+          <h2>
+            <span style="color: var(--accent-pink);">●</span> Source 2 (Variable)
+          </h2>
+          <span class="tag" style="background: rgba(236, 72, 153, 0.15); color: var(--accent-pink);">x = +d/2 (Front)</span>
+        </div>
+
+        <!-- E2 Amplitude -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <span class="label-title">Magnitude (A₂)</span>
+            <div class="val-input-group">
+              <input type="number" id="inputA2" class="num-input" min="0" max="3" step="0.05" value="1.00">
+              <span class="unit-label">V/m</span>
+            </div>
+          </div>
+          <div class="slider-container">
+            <input type="range" id="sliderA2" class="custom-range slider-pink" min="0" max="2" step="0.01" value="1.00">
+          </div>
+        </div>
+
+        <!-- E2 Phase (also relative phase Delta phi) -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <span class="label-title">Phase (α₂ / Δφ)</span>
+            <div class="val-input-group">
+              <input type="number" id="inputPhase2" class="num-input" min="-180" max="180" step="1" value="0">
+              <span class="unit-label">deg</span>
+            </div>
+          </div>
+          <div class="slider-container">
+            <input type="range" id="sliderPhase2" class="custom-range slider-pink" min="-180" max="180" step="1" value="0">
+          </div>
+          <div class="chip-group">
+            <button class="chip-btn" data-e2-phase="-180">-180°</button>
+            <button class="chip-btn" data-e2-phase="-90">-90°</button>
+            <button class="chip-btn" data-e2-phase="0">0°</button>
+            <button class="chip-btn" data-e2-phase="90">+90°</button>
+            <button class="chip-btn" data-e2-phase="180">+180°</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Distance & Array Geometry Card -->
+      <div class="glass-card">
+        <div class="card-title">
+          <h2>
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 6H3"/><path d="M21 12H3"/><path d="M21 18H3"/></svg>
+            Separation Distance (d)
+          </h2>
+          <span class="tag" style="background: rgba(245, 158, 11, 0.15); color: var(--accent-amber);" id="distPhysicalLabel">1.034 m</span>
+        </div>
+
+        <!-- Distance ratio slider -->
+        <div class="control-group">
+          <div class="control-label-row">
+            <span class="label-title">Wavelength Ratio (d / λ)</span>
+            <div class="val-input-group">
+              <input type="number" id="inputDistRatio" class="num-input" min="0.05" max="4.0" step="0.01" value="0.50">
+              <span class="unit-label">λ</span>
+            </div>
+          </div>
+          <div class="slider-container">
+            <input type="range" id="sliderDistRatio" class="custom-range slider-amber" min="0.05" max="3.5" step="0.01" value="0.50">
+          </div>
+          <div class="chip-group">
+            <button class="chip-btn" data-dist="0.10">0.10λ</button>
+            <button class="chip-btn" data-dist="0.25">λ/4 (0.25)</button>
+            <button class="chip-btn" data-dist="0.50">λ/2 (0.50)</button>
+            <button class="chip-btn" data-dist="0.75">3λ/4 (0.75)</button>
+            <button class="chip-btn" data-dist="1.00">1.0λ</button>
+            <button class="chip-btn" data-dist="1.50">1.5λ (Grating)</button>
+          </div>
+        </div>
+
+        <!-- Direct Phase Difference & Beam Steering -->
+        <div class="steering-helper-row">
+          <span class="label-title">Phase Difference (Δφ):</span>
+          <span id="labelDeltaPhase" style="font-family: var(--font-mono); font-weight: 600; color: var(--accent-cyan);">0°</span>
+        </div>
+        <div class="slider-container" style="margin-top: 6px;">
+          <input type="range" id="sliderDeltaPhase" class="custom-range" min="-180" max="180" step="1" value="0">
+        </div>
+
+        <!-- Steer Beam Angle Helper -->
+        <div class="steering-helper-row" style="margin-top: 10px;">
+          <span class="label-title">Steer Main Beam to:</span>
+          <div class="val-input-group">
+            <input type="number" id="inputSteerAngle" class="num-input" min="0" max="180" step="1" value="90">
+            <span class="unit-label">deg</span>
+          </div>
+        </div>
+        <div class="slider-container" style="margin-top: 6px;">
+          <input type="range" id="sliderSteerAngle" class="custom-range" min="0" max="180" step="1" value="90">
+        </div>
+      </div>
+
+      <!-- Frequency Specification (145 MHz Fixed) -->
+      <div class="glass-card">
+        <div class="card-title">
+          <h2>
+            <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="3" y="11" width="18" height="11" rx="2" ry="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+            Operating Frequency (Fixed)
+          </h2>
+          <span class="tag" style="background: rgba(16, 185, 129, 0.15); color: var(--accent-emerald);">VHF 2m Band</span>
+        </div>
+        <div class="freq-display-row">
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted);">Frequency (f)</div>
+            <div class="freq-val" id="textFreq">145.000 MHz</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted);">Wavelength (λ)</div>
+            <div class="freq-val" style="color: var(--accent-pink);" id="textWavelength">2.068 m</div>
+          </div>
+          <div>
+            <div style="font-size: 11px; color: var(--text-muted);">Wave # (k)</div>
+            <div class="freq-val" style="color: var(--accent-amber);" id="textWavenumber">3.039 rad/m</div>
+          </div>
+        </div>
+      </div>
+    </aside>
+
+    <!-- Right Column: Visualization & Analytics -->
+    <section class="vis-content">
+      <!-- Visualizer Navigation & Toolbar -->
+      <div class="vis-toolbar">
+        <div class="tabs-nav">
+          <button class="tab-btn active" data-tab="polar">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></svg>
+            2D Polar Plot
+          </button>
+          <button class="tab-btn" data-tab="cartesian">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg>
+            Cartesian Plot
+          </button>
+          <button class="tab-btn" data-tab="wave">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12c2.5-4 5.5-4 8 0s5.5 4 8 0 5.5-4 8 0"/></svg>
+            Instantaneous Wave
+          </button>
+          <button class="tab-btn" data-tab="density">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="9"/><path d="M12 3v18"/><path d="M3 12h18"/></svg>
+            RF Power Density
+          </button>
+        </div>
+
+        <div class="vis-options">
+          <!-- Angle Domain for Cartesian -->
+          <select id="selectCartesianDomain" class="select-dropdown">
+            <option value="symmetric">-180° to +180° (RF Std)</option>
+            <option value="positive">0° to 360°</option>
+          </select>
+          <!-- Scale mode -->
+          <select id="selectScaleMode" class="select-dropdown">
+            <option value="db">Scale: Decibel (dB)</option>
+            <option value="linear">Scale: Linear (|E|)</option>
+          </select>
+          <!-- Dynamic Range -->
+          <select id="selectDynamicRange" class="select-dropdown">
+            <option value="40">Range: 40 dB</option>
+            <option value="30">Range: 30 dB</option>
+            <option value="20">Range: 20 dB</option>
+          </select>
+        </div>
+      </div>
+
+      <!-- Visualization Stage Card -->
+      <div class="vis-stage-card">
+        <!-- 1. Polar Plot Container -->
+        <div class="vis-view-container active" id="viewPolar">
+          <canvas id="canvasPolar" class="interactive-canvas"></canvas>
+          <div class="canvas-inspect-badge" id="polarInspectBadge">
+            <div class="inspect-line"><span>Angle φ:</span><span class="inspect-val" id="inspAngle">--°</span></div>
+            <div class="inspect-line"><span>Norm Power:</span><span class="inspect-val" id="inspDb">-- dB</span></div>
+            <div class="inspect-line"><span>Field |E|:</span><span class="inspect-val" id="inspMag">--</span></div>
+          </div>
+        </div>
+
+        <!-- 2. Cartesian Plot Container -->
+        <div class="vis-view-container" id="viewCartesian">
+          <canvas id="canvasCartesian" class="interactive-canvas"></canvas>
+        </div>
+
+        <!-- 3. Dedicated Instantaneous Wave Propagation Container -->
+        <div class="vis-view-container" id="viewWave">
+          <canvas id="canvasWave" class="interactive-canvas"></canvas>
+
+          <!-- Top Bar -->
+          <div class="wave-top-overlay">
+            <div class="wave-overlay-group">
+              <span class="overlay-label">Speed:</span>
+              <span class="badge badge-cyan" style="padding: 2px 8px; font-size: 11px;">0.5x Fixed</span>
+            </div>
+            <div class="wave-overlay-group">
+              <span class="overlay-label">Theme:</span>
+              <select id="selectWaveTheme" class="select-dropdown" style="padding: 3px 8px;">
+                <option value="cyberpunk" selected>Cyberpunk EM</option>
+                <option value="turbo">Thermal Wave</option>
+              </select>
+            </div>
+          </div>
+
+          <!-- Bottom Controls Bar -->
+          <div class="wave-controls-overlay">
+            <button class="btn btn-primary btn-sm" id="btnWavePlayPause">Pause</button>
+            <span class="overlay-label" style="margin-left: 6px;">Zoom:</span>
+            <button class="btn btn-secondary btn-sm" id="btnWaveZoomOut" title="Zoom out">🔍 -</button>
+            <button class="btn btn-secondary btn-sm" id="btnWaveZoomIn" title="Zoom in">🔍 +</button>
+            <div class="zoom-presets-group">
+              <button class="chip-btn" id="btnWavePresetFar">Far-Field</button>
+              <button class="chip-btn" id="btnWavePresetNear">Near-Field</button>
+              <button class="chip-btn" id="btnWaveResetView">Reset</button>
+            </div>
+            <span class="hint-text">Wheel to Zoom • Drag to Pan</span>
+          </div>
+        </div>
+
+        <!-- 4. Dedicated RF Power Density Container -->
+        <div class="vis-view-container" id="viewDensity">
+          <canvas id="canvasDensity" class="interactive-canvas"></canvas>
+
+          <!-- Top Mode & Boundaries Bar -->
+          <div class="wave-top-overlay">
+            <div class="wave-overlay-group">
+              <span class="overlay-label">Colormap:</span>
+              <select id="selectDensityTheme" class="select-dropdown" style="padding: 3px 8px;">
+                <option value="turbo" selected>Turbo Thermal</option>
+                <option value="cyberpunk">Cyberpunk EM</option>
+              </select>
+            </div>
+            <button class="btn btn-secondary btn-sm" id="btnToggleBoundaries">Boundaries: ON</button>
+          </div>
+
+          <!-- Bottom Zoom & Navigation Bar -->
+          <div class="wave-controls-overlay">
+            <span class="overlay-label">Zoom:</span>
+            <button class="btn btn-secondary btn-sm" id="btnDensityZoomOut" title="Zoom out to Far-Field">🔍 -</button>
+            <button class="btn btn-secondary btn-sm" id="btnDensityZoomIn" title="Zoom in to Near-Field">🔍 +</button>
+            <div class="zoom-presets-group">
+              <button class="chip-btn" id="btnDensityPresetFar" title="Fraunhofer Far-Field view">Far-Field (0.35x)</button>
+              <button class="chip-btn" id="btnDensityPresetMid" title="Fresnel Zone view">Mid (1.0x)</button>
+              <button class="chip-btn" id="btnDensityPresetNear" title="Reactive Near-Field view">Near-Field (2.0x)</button>
+              <button class="chip-btn" id="btnDensityResetView" title="Reset view">Reset</button>
+            </div>
+            <span class="hint-text">Wheel to Zoom • Drag to Pan</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- Antenna Metrics Analytics Dashboard -->
+      <div class="metrics-grid">
+        <div class="metric-card">
+          <div class="metric-header">
+            <span>Directivity (D₀)</span>
+            <span style="color: var(--accent-cyan);">⚡</span>
+          </div>
+          <div class="metric-value" id="metricDirectivity">5.14 dBi</div>
+          <div class="metric-sub" id="metricDirectivityLin">3.27× isotropic</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span>Main Beam Direction</span>
+            <span style="color: var(--accent-blue);">🧭</span>
+          </div>
+          <div class="metric-value" id="metricMainBeam">90.0°</div>
+          <div class="metric-sub" id="metricMainBeamType">Broadside axis</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span>Front-to-Back (F/B)</span>
+            <span style="color: var(--accent-pink);">🎯</span>
+          </div>
+          <div class="metric-value" id="metricFB">0.0 dB</div>
+          <div class="metric-sub" id="metricFBSub">0° (Front +X) vs 180° (Back -X)</div>
+        </div>
+
+        <div class="metric-card">
+          <div class="metric-header">
+            <span>Side Lobe Level (SLL)</span>
+            <span style="color: var(--accent-purple);">🌊</span>
+          </div>
+          <div class="metric-value" id="metricSLL">None</div>
+          <div class="metric-sub" id="metricSLLSub">Peak secondary lobe</div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <!-- Theory & Mathematics Modal Dialog -->
+  <div class="modal-overlay" id="theoryModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h2>Antenna Array Theory & Mathematics</h2>
+        <button class="modal-close" id="btnCloseModal">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p>
+          An antenna array is a set of radiating elements positioned along a spatial geometry to produce a directional radiation pattern via electromagnetic wave interference.
+        </p>
+
+        <h3 style="color: #fff; font-size: 16px;">1. Far-Field Array Factor (AF)</h3>
+        <p>
+          For two isotropic point sources separated by distance <code>d</code> along the X-axis with excitations <code>A₁∠α₁</code> and <code>A₂∠α₂</code>, the far-field pattern at azimuth angle <code>φ</code> is given by:
+        </p>
+        <div class="formula-box">
+          AF(φ) = A₁ e^(j (α₁ + ψ)) + A₂ e^(j (α₂ - ψ))<br>
+          where ψ = (k · d / 2) · cos(φ) and k = 2π / λ
+        </div>
+
+        <h3 style="color: #fff; font-size: 16px;">2. Array Radiation Power Pattern</h3>
+        <p>
+          The instantaneous far-field power is proportional to <code>|AF(φ)|²</code>:
+        </p>
+        <div class="formula-box">
+          |AF(φ)|² = A₁² + A₂² + 2 A₁ A₂ cos(k · d · cos(φ) - Δφ)<br>
+          where Δφ = α₂ - α₁
+        </div>
+
+        <h3 style="color: #fff; font-size: 16px;">3. Broadside vs Endfire Arrays</h3>
+        <ul style="padding-left: 20px;">
+          <li><strong>Broadside Array (Δφ = 0°):</strong> Maxima occur perpendicular to the array line (φ = 90° and 270°).</li>
+          <li><strong>Endfire Array (Δφ = ±kd):</strong> Maxima occur along the array axis (φ = 0° [Front +X] or 180° [Back -X]).</li>
+          <li><strong>Grating Lobes:</strong> When element separation <code>d ≥ λ</code>, additional identical maxima (grating lobes) emerge in visible space.</li>
+        </ul>
+
+        <h3 style="color: #fff; font-size: 16px;">4. Electronic Beam Steering</h3>
+        <p>
+          To steer the main lobe to a desired target angle <code>θ₀</code>, the progressive phase shift must satisfy:
+        </p>
+        <div class="formula-box">
+          Δφ = -k · d · cos(θ₀)
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Main Application Logic -->
+  <script type="module" src="app.js?v=20"></script>
+</body>
+</html>

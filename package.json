@@ -1,0 +1,21 @@
+{
+  "name": "antenna-radiation-pattern-simulator",
+  "version": "1.0.0",
+  "type": "module",
+  "description": "Interactive Web Simulation of 2-Point Source Antenna Array Radiation Pattern & Interference",
+  "scripts": {
+    "dev": "node server.js",
+    "start": "node server.js"
+  },
+  "keywords": [
+    "antenna",
+    "radiation-pattern",
+    "phased-array",
+    "beamforming",
+    "simulation",
+    "physics",
+    "electromagnetics"
+  ],
+  "author": "",
+  "license": "MIT"
+}
