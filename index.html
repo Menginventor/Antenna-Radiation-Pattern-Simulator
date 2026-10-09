@@ -263,15 +263,11 @@
           </button>
           <button class="tab-btn" data-tab="wave">
             <span class="tab-indicator"></span>
-            2D WAVE [FIELD]
+            2D WAVE & DENSITY
           </button>
           <button class="tab-btn" data-tab="wave1d">
             <span class="tab-indicator"></span>
             1D WAVE [INTERF]
-          </button>
-          <button class="tab-btn" data-tab="density">
-            <span class="tab-indicator"></span>
-            DENSITY [S-AVG]
           </button>
         </div>
 
@@ -328,36 +324,52 @@
           <canvas id="canvasCartesian" class="interactive-canvas"></canvas>
         </div>
 
-        <!-- 3. Dedicated 2D Instantaneous Wave Propagation Container -->
+        <!-- 3. Unified 2D Electromagnetic Field & RF Power Density Container -->
         <div class="vis-view-container" id="viewWave">
           <canvas id="canvasWave" class="interactive-canvas"></canvas>
 
-          <!-- Top Bar: Colormap & Propagation Status -->
+          <!-- Top Bar: Mode Selector, Colormap & Zone Boundaries -->
           <div class="wave-top-overlay">
             <div class="wave-overlay-group">
-              <span class="overlay-label">Speed:</span>
-              <span class="badge badge-cyan" style="padding: 2px 8px; font-size: 11px;">0.50× Fixed</span>
+              <span class="overlay-label">Mode:</span>
+              <div class="field-mode-toggle" id="fieldModeToggle">
+                <button class="field-mode-btn active" data-mode="wave" id="btnModeWave" title="Instantaneous Traveling Wave Field E(x, y, t)">
+                  ⚡ Wave (E-field)
+                </button>
+                <button class="field-mode-btn" data-mode="density" id="btnModeDensity" title="Time-averaged RF Power Density |E|²">
+                  📊 RF Density (|E|²)
+                </button>
+              </div>
             </div>
+
             <div class="wave-overlay-group">
               <span class="overlay-label">Colormap:</span>
               <select id="selectWaveTheme" class="select-dropdown" style="padding: 3px 8px;">
                 <option value="coolwarm" selected>BWR / CoolWarm</option>
-                <option value="viridis">Viridis (Scientific)</option>
+                <option value="viridis">Matplotlib Viridis</option>
+                <option value="plasma">Matplotlib Plasma</option>
+                <option value="inferno">Matplotlib Inferno</option>
                 <option value="turbo">Thermal Turbo</option>
               </select>
             </div>
+
+            <button class="btn btn-secondary btn-sm" id="btnToggleBoundaries" title="Toggle Near-Field, Fresnel, and Fraunhofer Far-Field Boundaries">
+              Boundaries: ON
+            </button>
           </div>
 
-          <!-- Bottom Controls Bar -->
+          <!-- Bottom Controls Bar: Play/Pause, Speed, Zoom & Presets -->
           <div class="wave-controls-overlay">
-            <button class="btn btn-primary btn-sm" id="btnWavePlayPause">Pause</button>
+            <button class="btn btn-primary btn-sm" id="btnWavePlayPause" title="Play / Pause Wave Oscillation">Pause</button>
+            <span class="badge badge-cyan" id="waveSpeedBadge" style="padding: 2px 7px; font-size: 11px;">0.50× Fixed</span>
             <span class="overlay-label" style="margin-left: 6px;">Zoom:</span>
-            <button class="btn btn-secondary btn-sm" id="btnWaveZoomOut" title="Zoom out">🔍 -</button>
-            <button class="btn btn-secondary btn-sm" id="btnWaveZoomIn" title="Zoom in">🔍 +</button>
+            <button class="btn btn-secondary btn-sm" id="btnWaveZoomOut" title="Zoom out to Far-Field">🔍 -</button>
+            <button class="btn btn-secondary btn-sm" id="btnWaveZoomIn" title="Zoom in to Near-Field">🔍 +</button>
             <div class="zoom-presets-group">
-              <button class="chip-btn" id="btnWavePresetFar">Far-Field</button>
-              <button class="chip-btn" id="btnWavePresetNear">Near-Field</button>
-              <button class="chip-btn" id="btnWaveResetView">Reset</button>
+              <button class="chip-btn" id="btnWavePresetFar" title="Fraunhofer Far-Field view (0.35x)">Far-Field (0.35x)</button>
+              <button class="chip-btn" id="btnWavePresetMid" title="Fresnel Zone view (1.0x)">Mid (1.0x)</button>
+              <button class="chip-btn" id="btnWavePresetNear" title="Reactive Near-Field view (2.0x)">Near-Field (2.0x)</button>
+              <button class="chip-btn" id="btnWaveResetView" title="Reset view">Reset</button>
             </div>
             <span class="hint-text">Wheel to Zoom • Drag to Pan</span>
           </div>
@@ -395,38 +407,6 @@
             <div class="canvas-wrapper-1d">
               <canvas id="canvasWave1D" class="wave-1d-canvas"></canvas>
             </div>
-          </div>
-        </div>
-
-        <!-- 4. Dedicated RF Power Density Container -->
-        <div class="vis-view-container" id="viewDensity">
-          <canvas id="canvasDensity" class="interactive-canvas"></canvas>
-
-          <!-- Top Mode & Boundaries Bar -->
-          <div class="wave-top-overlay">
-            <div class="wave-overlay-group">
-              <span class="overlay-label">Colormap:</span>
-              <select id="selectDensityTheme" class="select-dropdown" style="padding: 3px 8px;">
-                <option value="viridis" selected>Matplotlib Viridis</option>
-                <option value="plasma">Matplotlib Plasma</option>
-                <option value="inferno">Matplotlib Inferno</option>
-              </select>
-            </div>
-            <button class="btn btn-secondary btn-sm" id="btnToggleBoundaries">Boundaries: ON</button>
-          </div>
-
-          <!-- Bottom Zoom & Navigation Bar -->
-          <div class="wave-controls-overlay">
-            <span class="overlay-label">Zoom:</span>
-            <button class="btn btn-secondary btn-sm" id="btnDensityZoomOut" title="Zoom out to Far-Field">🔍 -</button>
-            <button class="btn btn-secondary btn-sm" id="btnDensityZoomIn" title="Zoom in to Near-Field">🔍 +</button>
-            <div class="zoom-presets-group">
-              <button class="chip-btn" id="btnDensityPresetFar" title="Fraunhofer Far-Field view">Far-Field (0.35x)</button>
-              <button class="chip-btn" id="btnDensityPresetMid" title="Fresnel Zone view">Mid (1.0x)</button>
-              <button class="chip-btn" id="btnDensityPresetNear" title="Reactive Near-Field view">Near-Field (2.0x)</button>
-              <button class="chip-btn" id="btnDensityResetView" title="Reset view">Reset</button>
-            </div>
-            <span class="hint-text">Wheel to Zoom • Drag to Pan</span>
           </div>
         </div>
       </div>

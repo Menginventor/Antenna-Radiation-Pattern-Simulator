@@ -131,24 +131,16 @@ class AntennaApp {
       angleDomain: 'symmetric'
     });
 
-    // 3. Dedicated RF Power Density Field Simulator
-    const densityCanvas = document.getElementById('canvasDensity');
-    this.densityField = new WaveFieldRenderer(densityCanvas, this.sim, {
-      displayMode: 'density',
-      colorTheme: 'viridis',
-      showBoundaries: true
-    });
-
-    // 4. Dedicated Instantaneous Wave Field Simulator (fixed 0.5x speed)
+    // 3. Unified 2D Electromagnetic Field & RF Power Density Simulator
     const waveCanvas = document.getElementById('canvasWave');
-    this.instantaneousWave = new WaveFieldRenderer(waveCanvas, this.sim, {
+    this.waveField = new WaveFieldRenderer(waveCanvas, this.sim, {
       displayMode: 'wave',
       colorTheme: 'coolwarm',
-      showBoundaries: false,
+      showBoundaries: true,
       timeSpeed: 0.5
     });
 
-    // 5. Dedicated 1D Wave Interference Analyzer (Dual Sources)
+    // 4. Dedicated 1D Wave Interference Analyzer (Dual Sources)
     const wave1DCanvas = document.getElementById('canvasWave1D');
     if (wave1DCanvas) {
       this.wave1DPlot = new Wave1DPlotRenderer(wave1DCanvas, this.sim, {
@@ -160,7 +152,7 @@ class AntennaApp {
       });
 
       // Synchronize 1D plot animation with 2D wave simulation loop
-      this.instantaneousWave.onFrame((simTime) => {
+      this.waveField.onFrame((simTime) => {
         if (this.activeTab === 'wave1d' && this.wave1DPlot) {
           this.wave1DPlot.render(simTime);
         }
@@ -361,91 +353,81 @@ class AntennaApp {
       });
     });
 
-    // RF Density Controls (Tab 3)
-    const btnDensityZoomOut = document.getElementById('btnDensityZoomOut');
-    if (btnDensityZoomOut) {
-      btnDensityZoomOut.addEventListener('click', () => this.densityField.zoomOut());
-    }
+    // Unified 2D Field Controls (Wave & Density)
+    const btnModeWave = document.getElementById('btnModeWave');
+    const btnModeDensity = document.getElementById('btnModeDensity');
+    const wavePlayBtn = document.getElementById('btnWavePlayPause');
+    const waveSpeedBadge = document.getElementById('waveSpeedBadge');
 
-    const btnDensityZoomIn = document.getElementById('btnDensityZoomIn');
-    if (btnDensityZoomIn) {
-      btnDensityZoomIn.addEventListener('click', () => this.densityField.zoomIn());
-    }
+    if (btnModeWave && btnModeDensity) {
+      btnModeWave.addEventListener('click', () => {
+        btnModeWave.classList.add('active');
+        btnModeDensity.classList.remove('active');
+        this.waveField.setDisplayMode('wave');
+        if (wavePlayBtn) wavePlayBtn.style.display = '';
+        if (waveSpeedBadge) waveSpeedBadge.style.display = '';
+      });
 
-    const btnDensityPresetFar = document.getElementById('btnDensityPresetFar');
-    if (btnDensityPresetFar) {
-      btnDensityPresetFar.addEventListener('click', () => this.densityField.setPresetView('far'));
-    }
-
-    const btnDensityPresetMid = document.getElementById('btnDensityPresetMid');
-    if (btnDensityPresetMid) {
-      btnDensityPresetMid.addEventListener('click', () => this.densityField.setPresetView('mid'));
-    }
-
-    const btnDensityPresetNear = document.getElementById('btnDensityPresetNear');
-    if (btnDensityPresetNear) {
-      btnDensityPresetNear.addEventListener('click', () => this.densityField.setPresetView('near'));
-    }
-
-    const btnDensityResetView = document.getElementById('btnDensityResetView');
-    if (btnDensityResetView) {
-      btnDensityResetView.addEventListener('click', () => this.densityField.setPresetView('default'));
-    }
-
-    const selectDensityTheme = document.getElementById('selectDensityTheme');
-    if (selectDensityTheme) {
-      selectDensityTheme.addEventListener('change', (e) => {
-        this.densityField.setColorTheme(e.target.value);
+      btnModeDensity.addEventListener('click', () => {
+        btnModeDensity.classList.add('active');
+        btnModeWave.classList.remove('active');
+        this.waveField.setDisplayMode('density');
+        if (wavePlayBtn) wavePlayBtn.style.display = 'none';
+        if (waveSpeedBadge) waveSpeedBadge.style.display = 'none';
       });
     }
 
-    const btnToggleBoundaries = document.getElementById('btnToggleBoundaries');
-    if (btnToggleBoundaries) {
-      btnToggleBoundaries.addEventListener('click', () => {
-        const cur = this.densityField.showBoundaries;
-        this.densityField.setShowBoundaries(!cur);
-        btnToggleBoundaries.textContent = `Boundaries: ${!cur ? 'ON' : 'OFF'}`;
-      });
-    }
-
-    // Instantaneous Wave Controls (Tab 4)
     const btnWavePlay = document.getElementById('btnWavePlayPause');
     if (btnWavePlay) {
       btnWavePlay.addEventListener('click', () => {
-        const playing = this.instantaneousWave.togglePlay();
+        const playing = this.waveField.togglePlay();
         btnWavePlay.textContent = playing ? 'Pause' : 'Play';
       });
     }
 
     const btnWaveZoomOut = document.getElementById('btnWaveZoomOut');
     if (btnWaveZoomOut) {
-      btnWaveZoomOut.addEventListener('click', () => this.instantaneousWave.zoomOut());
+      btnWaveZoomOut.addEventListener('click', () => this.waveField.zoomOut());
     }
 
     const btnWaveZoomIn = document.getElementById('btnWaveZoomIn');
     if (btnWaveZoomIn) {
-      btnWaveZoomIn.addEventListener('click', () => this.instantaneousWave.zoomIn());
+      btnWaveZoomIn.addEventListener('click', () => this.waveField.zoomIn());
     }
 
     const btnWavePresetFar = document.getElementById('btnWavePresetFar');
     if (btnWavePresetFar) {
-      btnWavePresetFar.addEventListener('click', () => this.instantaneousWave.setPresetView('far'));
+      btnWavePresetFar.addEventListener('click', () => this.waveField.setPresetView('far'));
+    }
+
+    const btnWavePresetMid = document.getElementById('btnWavePresetMid');
+    if (btnWavePresetMid) {
+      btnWavePresetMid.addEventListener('click', () => this.waveField.setPresetView('mid'));
     }
 
     const btnWavePresetNear = document.getElementById('btnWavePresetNear');
     if (btnWavePresetNear) {
-      btnWavePresetNear.addEventListener('click', () => this.instantaneousWave.setPresetView('near'));
+      btnWavePresetNear.addEventListener('click', () => this.waveField.setPresetView('near'));
     }
 
     const btnWaveResetView = document.getElementById('btnWaveResetView');
     if (btnWaveResetView) {
-      btnWaveResetView.addEventListener('click', () => this.instantaneousWave.setPresetView('default'));
+      btnWaveResetView.addEventListener('click', () => this.waveField.setPresetView('default'));
     }
 
     const selectWaveTheme = document.getElementById('selectWaveTheme');
     if (selectWaveTheme) {
       selectWaveTheme.addEventListener('change', (e) => {
-        this.instantaneousWave.setColorTheme(e.target.value);
+        this.waveField.setColorTheme(e.target.value);
+      });
+    }
+
+    const btnToggleBoundaries = document.getElementById('btnToggleBoundaries');
+    if (btnToggleBoundaries) {
+      btnToggleBoundaries.addEventListener('click', () => {
+        const cur = this.waveField.showBoundaries;
+        this.waveField.setShowBoundaries(!cur);
+        btnToggleBoundaries.textContent = `Boundaries: ${!cur ? 'ON' : 'OFF'}`;
       });
     }
 
@@ -512,7 +494,7 @@ class AntennaApp {
         }
 
         setTimeout(() => {
-          if (this.instantaneousWave) this.instantaneousWave.resize();
+          if (this.waveField) this.waveField.resize();
           if (this.wave1DPlot) this.wave1DPlot.resize();
         }, 30);
       });
@@ -633,12 +615,9 @@ class AntennaApp {
     } else if (tab === 'cartesian') {
       document.getElementById('viewCartesian').classList.add('active');
       this.cartesianPlot.resize();
-    } else if (tab === 'density') {
-      document.getElementById('viewDensity').classList.add('active');
-      this.densityField.resize();
     } else if (tab === 'wave') {
       document.getElementById('viewWave').classList.add('active');
-      this.instantaneousWave.resize();
+      this.waveField.resize();
     } else if (tab === 'wave1d') {
       document.getElementById('viewWave1D').classList.add('active');
       if (this.wave1DPlot) this.wave1DPlot.resize();
@@ -648,9 +627,8 @@ class AntennaApp {
   resizeCurrentView() {
     if (this.activeTab === 'polar') this.polarPlot.resize();
     else if (this.activeTab === 'cartesian') this.cartesianPlot.resize();
-    else if (this.activeTab === 'density') this.densityField.resize();
     else if (this.activeTab === 'wave') {
-      this.instantaneousWave.resize();
+      this.waveField.resize();
     } else if (this.activeTab === 'wave1d') {
       if (this.wave1DPlot) this.wave1DPlot.resize();
     }
@@ -705,11 +683,10 @@ class AntennaApp {
     // 4. Update Renderers
     this.polarPlot.setPattern(pattern);
     this.cartesianPlot.setPattern(pattern);
-    if (this.densityField) this.densityField.setPattern(pattern);
-    if (this.instantaneousWave) this.instantaneousWave.setPattern(pattern);
+    if (this.waveField) this.waveField.setPattern(pattern);
     if (this.wave1DPlot) {
       this.wave1DPlot.setSimulator(this.sim);
-      this.wave1DPlot.render(this.instantaneousWave?.simTime || 0);
+      this.wave1DPlot.render(this.waveField?.simTime || 0);
     }
   }
 
@@ -721,8 +698,6 @@ class AntennaApp {
       dataUrl = this.polarPlot.exportImage();
     } else if (this.activeTab === 'cartesian') {
       dataUrl = document.getElementById('canvasCartesian').toDataURL('image/png');
-    } else if (this.activeTab === 'density') {
-      dataUrl = document.getElementById('canvasDensity').toDataURL('image/png');
     } else if (this.activeTab === 'wave') {
       dataUrl = document.getElementById('canvasWave').toDataURL('image/png');
     } else if (this.activeTab === 'wave1d') {
