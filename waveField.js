@@ -4,6 +4,52 @@
  * Supports interactive zoom (in/out), panning, RF power density, and zone boundaries.
  */
 
+const VIRIDIS_STOPS = [
+  [0.00, 68, 1, 84],
+  [0.15, 72, 38, 119],
+  [0.30, 59, 82, 139],
+  [0.45, 41, 120, 142],
+  [0.60, 33, 153, 141],
+  [0.75, 62, 185, 119],
+  [0.90, 144, 215, 67],
+  [1.00, 253, 231, 37]
+];
+
+const PLASMA_STOPS = [
+  [0.00, 13, 8, 135],
+  [0.25, 106, 0, 168],
+  [0.50, 177, 42, 144],
+  [0.75, 225, 100, 98],
+  [1.00, 240, 249, 33]
+];
+
+const INFERNO_STOPS = [
+  [0.00, 0, 0, 4],
+  [0.25, 87, 16, 110],
+  [0.50, 187, 55, 84],
+  [0.75, 249, 142, 9],
+  [1.00, 252, 255, 164]
+];
+
+function interpolateStops(stops, t) {
+  const clamped = Math.max(0, Math.min(1, t));
+  for (let i = 0; i < stops.length - 1; i++) {
+    const s0 = stops[i];
+    const s1 = stops[i + 1];
+    if (clamped >= s0[0] && clamped <= s1[0]) {
+      const span = s1[0] - s0[0] || 1e-6;
+      const frac = (clamped - s0[0]) / span;
+      return {
+        r: Math.round(s0[1] + (s1[1] - s0[1]) * frac),
+        g: Math.round(s0[2] + (s1[2] - s0[2]) * frac),
+        b: Math.round(s0[3] + (s1[3] - s0[3]) * frac)
+      };
+    }
+  }
+  const last = stops[stops.length - 1];
+  return { r: last[1], g: last[2], b: last[3] };
+}
+
 export class WaveFieldRenderer {
   constructor(canvas, simulator, options = {}) {
     this.canvas = canvas;
@@ -12,7 +58,7 @@ export class WaveFieldRenderer {
 
     // View & Display Modes
     this.displayMode = options.displayMode ?? 'density'; // 'density' (RF Power Density |E|^2) or 'wave' (Instantaneous E-field)
-    this.colorTheme = options.colorTheme ?? (this.displayMode === 'wave' ? 'cyberpunk' : 'turbo');
+    this.colorTheme = options.colorTheme ?? (this.displayMode === 'wave' ? 'coolwarm' : 'viridis');
     this.showBoundaries = options.showBoundaries ?? true;
     this.showElements = true;
     this.isPlaying = true;
@@ -360,65 +406,39 @@ export class WaveFieldRenderer {
 
   mapColor(val, isDensity) {
     if (isDensity) {
-      // Thermal / Turbo colormap for RF Power Density
       const t = Math.max(0, Math.min(1, val));
-      if (this.colorTheme === 'turbo') {
-        // Dark Navy -> Electric Blue -> Green -> Orange/Yellow -> Red/White
-        let r = 0, g = 0, b = 0;
-        if (t < 0.25) {
-          const f = t / 0.25;
-          r = Math.floor(6 + 10 * f);
-          g = Math.floor(14 + 100 * f);
-          b = Math.floor(35 + 200 * f);
-        } else if (t < 0.5) {
-          const f = (t - 0.25) / 0.25;
-          r = Math.floor(16 + 10 * f);
-          g = Math.floor(114 + 120 * f);
-          b = Math.floor(235 - 120 * f);
-        } else if (t < 0.75) {
-          const f = (t - 0.5) / 0.25;
-          r = Math.floor(26 + 210 * f);
-          g = Math.floor(234 + 10 * f);
-          b = Math.floor(115 - 100 * f);
-        } else {
-          const f = (t - 0.75) / 0.25;
-          r = Math.floor(236 + 19 * f);
-          g = Math.floor(244 - 150 * f);
-          b = Math.floor(15 + 160 * f);
-        }
-        return { r, g, b };
+      if (this.colorTheme === 'plasma') {
+        return interpolateStops(PLASMA_STOPS, t);
+      } else if (this.colorTheme === 'inferno') {
+        return interpolateStops(INFERNO_STOPS, t);
       } else {
-        // Cyberpunk Density: Dark Blue -> Cyan -> Purple -> Hot Pink
-        let r = 0, g = 0, b = 0;
-        if (t < 0.5) {
-          const f = t / 0.5;
-          r = Math.floor(10 + 20 * f);
-          g = Math.floor(25 + 210 * f);
-          b = Math.floor(50 + 205 * f);
-        } else {
-          const f = (t - 0.5) / 0.5;
-          r = Math.floor(30 + 215 * f);
-          g = Math.floor(235 - 180 * f);
-          b = Math.floor(255 - 80 * f);
-        }
-        return { r, g, b };
+        // Default: Matplotlib Viridis
+        return interpolateStops(VIRIDIS_STOPS, t);
       }
     } else {
-      // Wave mode: positive field cyan, negative field magenta
+      // Instantaneous wave mode (bipolar E-field)
       const v = Math.max(-1, Math.min(1, val));
-      if (v >= 0) {
-        return {
-          r: Math.floor(10 + 20 * v),
-          g: Math.floor(20 + 225 * v),
-          b: Math.floor(40 + 215 * v)
-        };
+      if (this.colorTheme === 'viridis') {
+        return interpolateStops(VIRIDIS_STOPS, (v + 1) * 0.5);
+      } else if (this.colorTheme === 'plasma') {
+        return interpolateStops(PLASMA_STOPS, (v + 1) * 0.5);
       } else {
-        const nv = -v;
-        return {
-          r: Math.floor(10 + 235 * nv),
-          g: Math.floor(20 + 40 * nv),
-          b: Math.floor(40 + 170 * nv)
-        };
+        // Matplotlib CoolWarm (Diverging: Blue for negative, Dark neutral for zero, Red for positive)
+        if (v < 0) {
+          const t = -v; // 0 to 1
+          return {
+            r: Math.round(15 + 44 * t),
+            g: Math.round(20 + 56 * t),
+            b: Math.round(30 + 162 * t)
+          };
+        } else {
+          const t = v; // 0 to 1
+          return {
+            r: Math.round(15 + 165 * t),
+            g: Math.round(20 - 10 * t),
+            b: Math.round(30 + 8 * t)
+          };
+        }
       }
     }
   }
@@ -492,11 +512,11 @@ export class WaveFieldRenderer {
       ctx.stroke();
       ctx.setLineDash([]);
 
-      // Element 1 (Cyan circle, -X side)
-      this.drawAntennaDot(ctx, e1X, e1Y, '#06b6d4', 'E₁', dpr);
+      // Element 1 (Matplotlib Blue, -X side)
+      this.drawAntennaDot(ctx, e1X, e1Y, '#1f77b4', 'CH1 (E₁)', dpr);
 
-      // Element 2 (Pink circle, +X side)
-      this.drawAntennaDot(ctx, e2X, e2Y, '#ec4899', 'E₂', dpr);
+      // Element 2 (Matplotlib Orange, +X side)
+      this.drawAntennaDot(ctx, e2X, e2Y, '#ff7f0e', 'CH2 (E₂)', dpr);
 
       // Distance tag
       ctx.font = `${10 * dpr}px 'JetBrains Mono', monospace`;

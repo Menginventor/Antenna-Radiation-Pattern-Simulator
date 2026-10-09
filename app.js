@@ -79,6 +79,10 @@ class AntennaApp {
     this.inspAngle = document.getElementById('inspAngle');
     this.inspDb = document.getElementById('inspDb');
     this.inspMag = document.getElementById('inspMag');
+    this.inspPower = document.getElementById('inspPower');
+    this.inspInterf = document.getElementById('inspInterf');
+    this.btnToggleAbsPower = document.getElementById('btnToggleAbsPower');
+    this.polarDestructiveLegend = document.getElementById('polarDestructiveLegend');
 
     // Modal
     this.theoryModal = document.getElementById('theoryModal');
@@ -96,13 +100,25 @@ class AntennaApp {
     });
     this.polarPlot.onHover((hoverData) => {
       if (hoverData) {
-        this.inspAngle.textContent = `${hoverData.angleDeg}°`;
-        this.inspDb.textContent = `${hoverData.db} dB`;
-        this.inspMag.textContent = `${hoverData.mag}`;
+        if (this.inspAngle) this.inspAngle.textContent = `${hoverData.angleDeg}°`;
+        if (this.inspDb) this.inspDb.textContent = `${hoverData.db} dB`;
+        if (this.inspMag) this.inspMag.textContent = `${hoverData.mag} V/m`;
+        if (this.inspPower) this.inspPower.textContent = `${hoverData.absPower} W/m²`;
+        if (this.inspInterf) {
+          if (hoverData.interferenceType === 'Destructive') {
+            this.inspInterf.innerHTML = `<span style="color: #38bdf8; font-weight: 700;">Destructive (-${hoverData.interferencePct}%)</span>`;
+          } else if (hoverData.interferenceType === 'Constructive') {
+            this.inspInterf.innerHTML = `<span style="color: #ec4899; font-weight: 700;">Constructive (+${hoverData.interferencePct}%)</span>`;
+          } else {
+            this.inspInterf.innerHTML = `<span style="color: #94a3b8;">Baseline P₀</span>`;
+          }
+        }
       } else {
-        this.inspAngle.textContent = '--°';
-        this.inspDb.textContent = '-- dB';
-        this.inspMag.textContent = '--';
+        if (this.inspAngle) this.inspAngle.textContent = '--°';
+        if (this.inspDb) this.inspDb.textContent = '-- dB';
+        if (this.inspMag) this.inspMag.textContent = '--';
+        if (this.inspPower) this.inspPower.textContent = '-- W/m²';
+        if (this.inspInterf) this.inspInterf.textContent = '--';
       }
     });
 
@@ -282,9 +298,15 @@ class AntennaApp {
     // Scale Mode
     if (this.selectScaleMode) {
       this.selectScaleMode.addEventListener('change', (e) => {
-        this.scaleMode = e.target.value;
-        this.polarPlot.setScaleMode(this.scaleMode);
-        this.cartesianPlot.setScaleMode(this.scaleMode);
+        this.setScaleMode(e.target.value);
+      });
+    }
+
+    // Toggle Absolute Power button
+    if (this.btnToggleAbsPower) {
+      this.btnToggleAbsPower.addEventListener('click', () => {
+        const nextMode = this.scaleMode === 'absPower' ? 'db' : 'absPower';
+        this.setScaleMode(nextMode);
       });
     }
 
@@ -431,6 +453,25 @@ class AntennaApp {
       this.btnExportImage.addEventListener('click', () => {
         this.exportVisualizationPNG();
       });
+    }
+  }
+
+  setScaleMode(mode) {
+    this.scaleMode = mode;
+    if (this.selectScaleMode) this.selectScaleMode.value = mode;
+    this.polarPlot.setScaleMode(this.scaleMode);
+    this.cartesianPlot.setScaleMode(this.scaleMode);
+    this.updateAbsPowerUIState();
+  }
+
+  updateAbsPowerUIState() {
+    const isAbs = this.scaleMode === 'absPower';
+    if (this.btnToggleAbsPower) {
+      this.btnToggleAbsPower.classList.toggle('active-power', isAbs);
+      this.btnToggleAbsPower.textContent = isAbs ? '✓ Absolute Power (|E|²)' : '⚡ Absolute Power (|E|²)';
+    }
+    if (this.polarDestructiveLegend) {
+      this.polarDestructiveLegend.classList.toggle('hidden', !isAbs);
     }
   }
 

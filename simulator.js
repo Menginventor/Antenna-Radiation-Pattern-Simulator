@@ -149,6 +149,18 @@ export class AntennaSimulator {
       }
     }
 
+    // Absolute power calculations (|E|²)
+    const a1 = this.elem1.amplitude;
+    const a2 = this.elem2.amplitude;
+    const baselinePower = a1 * a1 + a2 * a2; // Incoherent baseline (no interference)
+    const maxTheoreticalPower = Math.pow(a1 + a2, 2); // 100% Constructive interference limit
+    const minTheoreticalPower = Math.pow(Math.abs(a1 - a2), 2); // 100% Destructive interference limit
+    const maxActualPower = maxMag * maxMag;
+    const absolutePower = new Float64Array(numPoints);
+    for (let i = 0; i < numPoints; i++) {
+      absolutePower[i] = fieldMagnitudes[i] * fieldMagnitudes[i];
+    }
+
     // Directivity calculation
     // 2D Azimuth Directivity: D2D = 2 * pi * max(P) / Integral(P dPhi)
     const directivity2D = (2 * Math.PI) / (powerIntegral || 1e-6);
@@ -164,7 +176,10 @@ export class AntennaSimulator {
       normField,
       clampedDb,
       dynamicRangeDb,
-      directivity3DdBi
+      directivity3DdBi,
+      fieldMagnitudes,
+      absolutePower,
+      baselinePower
     );
 
     return {
@@ -175,6 +190,13 @@ export class AntennaSimulator {
       powerLinear,
       powerDb,
       clampedDb,
+      absolutePower,
+      a1,
+      a2,
+      baselinePower,
+      maxTheoreticalPower,
+      minTheoreticalPower,
+      maxActualPower,
       maxMag,
       dynamicRangeDb,
       directivity2D,
@@ -188,7 +210,7 @@ export class AntennaSimulator {
   /**
    * Find main lobes, -3dB HPBW, nulls, Front-to-Back ratio, Side Lobe Level
    */
-  analyzePatternFeatures(angles, normField, clampedDb, dynamicRangeDb, directivity3DdBi) {
+  analyzePatternFeatures(angles, normField, clampedDb, dynamicRangeDb, directivity3DdBi, fieldMagnitudes, absolutePower, baselinePower) {
     const n = angles.length;
     const peaks = [];
     const nulls = [];
@@ -201,13 +223,32 @@ export class AntennaSimulator {
 
       if (curr >= prev && curr >= next && curr > 0.05) {
         if (curr > prev || curr > next) {
-          peaks.push({ index: i, angleRad: angles[i], angleDeg: (angles[i] * 180) / Math.PI, val: curr, db: clampedDb[i] });
+          peaks.push({
+            index: i,
+            angleRad: angles[i],
+            angleDeg: (angles[i] * 180) / Math.PI,
+            val: curr,
+            db: clampedDb[i],
+            absMag: fieldMagnitudes ? fieldMagnitudes[i] : curr,
+            absPower: absolutePower ? absolutePower[i] : curr * curr
+          });
         }
       }
 
-      if (curr <= prev && curr <= next && curr < 0.2) {
+      if (curr <= prev && curr <= next && curr < 0.25) {
         if (curr < prev || curr < next) {
-          nulls.push({ index: i, angleRad: angles[i], angleDeg: (angles[i] * 180) / Math.PI, val: curr, db: clampedDb[i] });
+          const p = absolutePower ? absolutePower[i] : curr * curr;
+          nulls.push({
+            index: i,
+            angleRad: angles[i],
+            angleDeg: (angles[i] * 180) / Math.PI,
+            val: curr,
+            db: clampedDb[i],
+            absMag: fieldMagnitudes ? fieldMagnitudes[i] : curr,
+            absPower: p,
+            isDestructiveNull: true,
+            cancellationPct: baselinePower ? Math.max(0, Math.min(100, Math.round(((baselinePower - p) / baselinePower) * 100))) : 100
+          });
         }
       }
     }
@@ -287,9 +328,22 @@ export class AntennaSimulator {
       sideLobeLevelDb: sideLobeLevelDb !== null ? Number(sideLobeLevelDb.toFixed(1)) : 'None',
       sideLobeAngleDeg: sideLobeAngleDeg !== null ? Number(sideLobeAngleDeg.toFixed(1)) : null,
       frontToBackDb: Number(frontToBackDb.toFixed(1)),
-      directivityDbi: Number(directivity3DdBi.toFixed(2)),
-      peaks: peaks.map(p => ({ angleDeg: Number(p.angleDeg.toFixed(1)), db: Number(p.db.toFixed(1)) })),
-      nulls: nulls.map(p => ({ angleDeg: Number(p.angleDeg.toFixed(1)), db: Number(p.db.toFixed(1)) }))
+      peaks: peaks.map(p => ({
+        angleDeg: Number(p.angleDeg.toFixed(1)),
+        angleRad: p.angleRad,
+        db: Number(p.db.toFixed(1)),
+        absMag: Number((p.absMag ?? 0).toFixed(3)),
+        absPower: Number((p.absPower ?? 0).toFixed(3))
+      })),
+      nulls: nulls.map(p => ({
+        angleDeg: Number(p.angleDeg.toFixed(1)),
+        angleRad: p.angleRad,
+        db: Number(p.db.toFixed(1)),
+        absMag: Number((p.absMag ?? 0).toFixed(3)),
+        absPower: Number((p.absPower ?? 0).toFixed(3)),
+        isDestructiveNull: true,
+        cancellationPct: p.cancellationPct ?? 100
+      }))
     };
   }
 

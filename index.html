@@ -266,7 +266,8 @@
           <!-- Scale mode -->
           <select id="selectScaleMode" class="select-dropdown">
             <option value="db">Scale: Decibel (dB)</option>
-            <option value="linear">Scale: Linear (|E|)</option>
+            <option value="linear">Scale: Linear Field (|E|)</option>
+            <option value="absPower">Scale: Absolute Power (|E|²)</option>
           </select>
           <!-- Dynamic Range -->
           <select id="selectDynamicRange" class="select-dropdown">
@@ -282,8 +283,22 @@
         <!-- 1. Polar Plot Container -->
         <div class="vis-view-container active" id="viewPolar">
           <canvas id="canvasPolar" class="interactive-canvas"></canvas>
+
+          <!-- Polar Top Controls Overlay -->
+          <div class="polar-top-overlay">
+            <button class="chip-btn" id="btnToggleAbsPower" title="Toggle Absolute Power to observe destructive interference & baseline cancellation">
+              ⚡ Absolute Power (|E|²)
+            </button>
+            <div id="polarDestructiveLegend" class="polar-legend-badge hidden">
+              <span class="legend-dot dot-destructive"></span> &lt; P₀ Destructive
+              <span class="legend-dot dot-constructive" style="margin-left: 8px;"></span> &gt; P₀ Constructive
+            </div>
+          </div>
+
           <div class="canvas-inspect-badge" id="polarInspectBadge">
             <div class="inspect-line"><span>Angle φ:</span><span class="inspect-val" id="inspAngle">--°</span></div>
+            <div class="inspect-line"><span>Abs Power:</span><span class="inspect-val" id="inspPower">-- W/m²</span></div>
+            <div class="inspect-line"><span>Interference:</span><span class="inspect-val" id="inspInterf">--</span></div>
             <div class="inspect-line"><span>Norm Power:</span><span class="inspect-val" id="inspDb">-- dB</span></div>
             <div class="inspect-line"><span>Field |E|:</span><span class="inspect-val" id="inspMag">--</span></div>
           </div>
@@ -422,14 +437,22 @@
           where ψ = (k · d / 2) · cos(φ) and k = 2π / λ
         </div>
 
-        <h3 style="color: #fff; font-size: 16px;">2. Array Radiation Power Pattern</h3>
+        <h3 style="color: #fff; font-size: 16px;">2. Array Radiation Power Pattern & Interference</h3>
         <p>
-          The instantaneous far-field power is proportional to <code>|AF(φ)|²</code>:
+          The far-field power is proportional to <code>|AF(φ)|² = |E(φ)|²</code>:
         </p>
         <div class="formula-box">
           |AF(φ)|² = A₁² + A₂² + 2 A₁ A₂ cos(k · d · cos(φ) - Δφ)<br>
           where Δφ = α₂ - α₁
         </div>
+        <p>
+          <strong>Constructive vs Destructive Interference:</strong>
+        </p>
+        <ul style="padding-left: 20px; font-size: 13px; color: var(--text-secondary); line-height: 1.6;">
+          <li><strong>Incoherent Baseline (<code>P₀ = A₁² + A₂²</code>):</strong> Power radiated without mutual phase coherence.</li>
+          <li><strong>Constructive Interference (<code>|AF|² &gt; P₀</code>):</strong> When <code>cos(...) &gt; 0</code>, wave crests reinforce, amplifying power up to <code>(A₁ + A₂)²</code>.</li>
+          <li><strong>Destructive Interference (<code>|AF|² &lt; P₀</code>):</strong> When <code>cos(...) &lt; 0</code>, opposing phase wavefronts cancel, pulling power below <code>P₀</code> down to <code>(A₁ - A₂)²</code> (deep nulls).</li>
+        </ul>
 
         <h3 style="color: #fff; font-size: 16px;">3. Broadside vs Endfire Arrays</h3>
         <ul style="padding-left: 20px;">

@@ -4,12 +4,14 @@ An interactive web-based physics simulation of a **2-point source antenna array*
 
 Explore how element magnitude, excitation phase, and spatial separation shape far-field beamforming, directivity, beam steering, and near-field wavefront propagation in real time.
 
+🔗 **Live Demo:** [https://menginventor.github.io/Antenna-Radiation-Pattern-Simulator/](https://menginventor.github.io/Antenna-Radiation-Pattern-Simulator/)
+
 ---
 
 ## 🌟 Key Features
 
 ### 1. Multi-View Interactive Visualizations
-- **2D Polar Radiation Pattern**: High-DPI canvas polar diagram with logarithmic ($\text{dB}$) and linear ($|E|$) modes, concentric scale rings, half-power beamwidth ($-3\text{ dB}$ HPBW) sector highlight, antenna array axis markers, and interactive hover inspection.
+- **2D Polar Radiation Pattern**: High-DPI canvas polar diagram with logarithmic ($\text{dB}$), linear field ($|E|$), and **absolute power ($|E|^2$)** modes. The absolute power mode allows direct visualization of constructive interference (surpassing the uncorrelated baseline $A_1^2 + A_2^2$) and destructive interference (cancellations and sharp nulls), complete with concentric scale rings, half-power beamwidth ($-3\text{ dB}$ HPBW) sector highlight, antenna array axis markers, and interactive hover inspection.
 - **2D Wave Interference Heatmap**: 60 FPS animated electromagnetic wavefront propagation showing constructive interference (surging wavefronts) and destructive interference (dead nulls) with customizable color palettes (*Cyberpunk EM*, *Plasma Thermal*, *Emerald Radar*).
 - **3D Far-Field Radiation Pattern**: WebGL Three.js interactive 3D radiation lobe with vertex false-color gain mapping, orbit rotation, zoom, and wireframe toggle.
 - **Cartesian Plot**: Azimuth angle ($0^\circ \to 360^\circ$) vs Normalized Gain in $\text{dB}$ or linear scale, with $-3\text{ dB}$ threshold and peak indicators.
@@ -56,6 +58,9 @@ $$\Delta\phi = -k d \cos\theta_0$$
 ---
 
 ## 🚀 Getting Started
+
+### Online Demo
+Try it instantly in your browser: [https://menginventor.github.io/Antenna-Radiation-Pattern-Simulator/](https://menginventor.github.io/Antenna-Radiation-Pattern-Simulator/)
 
 ### Prerequisites
 Node.js (v18+)

@@ -109,6 +109,10 @@ export class CartesianPlotRenderer {
     if (this.scaleMode === 'db') {
       const clamped = Math.max(-this.dynamicRangeDb, Math.min(0, val));
       normY = -clamped / this.dynamicRangeDb; // 0 at top, 1 at bottom
+    } else if (this.scaleMode === 'absPower') {
+      const pMax = Math.max(0.1, this.cachedPattern?.maxTheoreticalPower || 4.0);
+      const clamped = Math.max(0, Math.min(pMax, val));
+      normY = 1.0 - (clamped / pMax);
     } else {
       const clamped = Math.max(0, Math.min(1, val));
       normY = 1.0 - clamped;
@@ -221,6 +225,50 @@ export class CartesianPlotRenderer {
         ctx.lineTo(pad.left + pw, y);
       }
       ctx.stroke();
+    } else if (this.scaleMode === 'absPower') {
+      const pMax = Math.max(0.1, this.cachedPattern?.maxTheoreticalPower || 4.0);
+      const pBase = this.cachedPattern?.baselinePower || 2.0;
+
+      // Minor grid
+      ctx.strokeStyle = '#0e1726';
+      ctx.beginPath();
+      for (let p = 0; p <= pMax; p += 0.5) {
+        if (p % 1.0 !== 0) {
+          const y = this.valToY(p, pad, ph);
+          ctx.moveTo(pad.left, y);
+          ctx.lineTo(pad.left + pw, y);
+        }
+      }
+      ctx.stroke();
+
+      // Major grid
+      ctx.strokeStyle = '#1a263d';
+      ctx.beginPath();
+      for (let p = 0; p <= pMax; p += 1.0) {
+        const y = this.valToY(p, pad, ph);
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(pad.left + pw, y);
+      }
+      ctx.stroke();
+
+      // Baseline line for Destructive Interference Threshold
+      const yBase = this.valToY(pBase, pad, ph);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(6, 182, 212, 0.75)';
+      ctx.lineWidth = 1.5 * dpr;
+      ctx.setLineDash([4 * dpr, 4 * dpr]);
+      ctx.beginPath();
+      ctx.moveTo(pad.left, yBase);
+      ctx.lineTo(pad.left + pw, yBase);
+      ctx.stroke();
+
+      // Right label for baseline
+      ctx.fillStyle = '#38bdf8';
+      ctx.font = `${9 * dpr}px 'JetBrains Mono', monospace`;
+      ctx.textAlign = 'right';
+      ctx.textBaseline = 'bottom';
+      ctx.fillText(`P₀ Baseline: ${pBase.toFixed(1)} (Destructive Threshold)`, pad.left + pw - 6 * dpr, yBase - 3 * dpr);
+      ctx.restore();
     } else {
       // Linear scale
       const linMajor = 0.2;
@@ -263,6 +311,15 @@ export class CartesianPlotRenderer {
         ctx.moveTo(pad.left + pw, y);
         ctx.lineTo(pad.left + pw - tickLen, y);
       }
+    } else if (this.scaleMode === 'absPower') {
+      const pMax = Math.max(0.1, this.cachedPattern?.maxTheoreticalPower || 4.0);
+      for (let p = 0; p <= pMax; p += 1.0) {
+        const y = this.valToY(p, pad, ph);
+        ctx.moveTo(pad.left, y);
+        ctx.lineTo(pad.left + tickLen, y);
+        ctx.moveTo(pad.left + pw, y);
+        ctx.lineTo(pad.left + pw - tickLen, y);
+      }
     } else {
       for (let v = 0; v <= 1.0; v += 0.2) {
         const y = this.valToY(v, pad, ph);
@@ -296,6 +353,13 @@ export class CartesianPlotRenderer {
         ctx.fillStyle = '#94a3b8';
         ctx.fillText(`${db}`, pad.left - 6 * dpr, y);
       }
+    } else if (this.scaleMode === 'absPower') {
+      const pMax = Math.max(0.1, this.cachedPattern?.maxTheoreticalPower || 4.0);
+      for (let p = 0; p <= pMax; p += 1.0) {
+        const y = this.valToY(p, pad, ph);
+        ctx.fillStyle = '#94a3b8';
+        ctx.fillText(p.toFixed(1), pad.left - 6 * dpr, y);
+      }
     } else {
       for (let v = 0; v <= 1.0; v += 0.2) {
         const y = this.valToY(v, pad, ph);
@@ -313,14 +377,20 @@ export class CartesianPlotRenderer {
     ctx.translate(14 * dpr, pad.top + ph / 2);
     ctx.rotate(-Math.PI / 2);
     ctx.textAlign = 'center';
-    ctx.fillText(this.scaleMode === 'db' ? 'NORMALIZED GAIN (dB)' : 'FIELD MAGNITUDE |E|', 0, 0);
+    let yTitle = 'NORMALIZED GAIN (dB)';
+    if (this.scaleMode === 'absPower') {
+      yTitle = 'ABSOLUTE POWER |E|² (W/m²)';
+    } else if (this.scaleMode === 'linear') {
+      yTitle = 'FIELD MAGNITUDE |E|';
+    }
+    ctx.fillText(yTitle, 0, 0);
     ctx.restore();
 
     ctx.restore();
   }
 
   drawEngineeringTrace(ctx, pad, pw, ph) {
-    const { angles, normField, clampedDb, numPoints } = this.cachedPattern;
+    const { angles, normField, clampedDb, absolutePower, fieldMagnitudes, numPoints } = this.cachedPattern;
     ctx.save();
     const dpr = this.devicePixelRatio;
 
@@ -339,7 +409,14 @@ export class CartesianPlotRenderer {
         if (samplePhi < 0) samplePhi += 2 * Math.PI;
 
         const idx = Math.min(numPoints - 1, Math.max(0, Math.round((samplePhi / (2 * Math.PI)) * numPoints))) % numPoints;
-        const val = this.scaleMode === 'db' ? clampedDb[idx] : normField[idx];
+        let val;
+        if (this.scaleMode === 'absPower') {
+          val = absolutePower ? absolutePower[idx] : (fieldMagnitudes ? fieldMagnitudes[idx] * fieldMagnitudes[idx] : normField[idx] * normField[idx]);
+        } else if (this.scaleMode === 'linear') {
+          val = normField[idx];
+        } else {
+          val = clampedDb[idx];
+        }
 
         const x = this.angleToX(deg, pad, pw);
         const y = this.valToY(val, pad, ph);
@@ -356,7 +433,14 @@ export class CartesianPlotRenderer {
       for (let i = 0; i < numPoints; i++) {
         const phi = angles[i];
         const deg = (phi * 180) / Math.PI;
-        const val = this.scaleMode === 'db' ? clampedDb[i] : normField[i];
+        let val;
+        if (this.scaleMode === 'absPower') {
+          val = absolutePower ? absolutePower[i] : (fieldMagnitudes ? fieldMagnitudes[i] * fieldMagnitudes[i] : normField[i] * normField[i]);
+        } else if (this.scaleMode === 'linear') {
+          val = normField[i];
+        } else {
+          val = clampedDb[i];
+        }
 
         const x = this.angleToX(deg, pad, pw);
         const y = this.valToY(val, pad, ph);
@@ -469,8 +553,24 @@ export class CartesianPlotRenderer {
     const idx = Math.min(numPoints - 1, Math.max(0, Math.round((samplePhi / (2 * Math.PI)) * numPoints))) % numPoints;
     const mag = normField[idx];
     const db = clampedDb[idx];
+    const pBase = this.cachedPattern.baselinePower || 2.0;
+    const absP = this.cachedPattern.absolutePower ? this.cachedPattern.absolutePower[idx] : mag * mag;
 
-    const traceY = this.valToY(this.scaleMode === 'db' ? db : mag, pad, ph);
+    let traceVal;
+    let valText;
+    if (this.scaleMode === 'absPower') {
+      traceVal = absP;
+      const interf = absP < pBase * 0.98 ? ' [Destructive]' : (absP > pBase * 1.02 ? ' [Constructive]' : '');
+      valText = `${absP.toFixed(2)} W${interf}`;
+    } else if (this.scaleMode === 'db') {
+      traceVal = db;
+      valText = `${db.toFixed(2)} dB`;
+    } else {
+      traceVal = mag;
+      valText = `${mag.toFixed(4)}`;
+    }
+
+    const traceY = this.valToY(traceVal, pad, ph);
 
     // Crosshair line: full vertical and horizontal dotted lines
     ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
@@ -495,7 +595,6 @@ export class CartesianPlotRenderer {
     ctx.stroke();
 
     // Floating technical coordinate readout
-    const valText = this.scaleMode === 'db' ? `${db.toFixed(2)} dB` : `${mag.toFixed(4)}`;
     const coordText = `X: ${deg.toFixed(1)}° | Y: ${valText}`;
 
     ctx.font = `${9.5 * dpr}px 'JetBrains Mono', monospace`;
