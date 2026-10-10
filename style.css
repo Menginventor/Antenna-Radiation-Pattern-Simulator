@@ -339,6 +339,7 @@ body {
   border: 1px solid transparent;
   outline: none;
   font-family: var(--font-sans);
+  text-decoration: none;
 }
 
 .btn-secondary {
