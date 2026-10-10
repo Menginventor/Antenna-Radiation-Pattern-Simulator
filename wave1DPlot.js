@@ -23,7 +23,9 @@ export class Wave1DPlotRenderer {
     this.showCH1 = options.showCH1 ?? true;
     this.showCH2 = options.showCH2 ?? true;
     this.showSum = options.showSum ?? true;
-    this.showEnvelope = options.showEnvelope ?? true;
+    this.showEnvelope = options.showEnvelope ?? true; // Total Superposition Envelope (±Env Σ)
+    this.showEnv1 = options.showEnv1 ?? false;        // Source 1 Envelope (±Env E₁)
+    this.showEnv2 = options.showEnv2 ?? false;        // Source 2 Envelope (±Env E₂)
 
     // Mode: 'spatial' (along X-axis) or 'time' (oscilloscope waveform at feeds)
     this.domainMode = options.domainMode ?? 'spatial';
@@ -90,7 +92,7 @@ export class Wave1DPlotRenderer {
     const frac = Math.max(0, Math.min(1, (canvasPixelX - pad.left) / pw));
     const targetWorldX = oldXMin + frac * oldSpan;
 
-    const newZoom = Math.max(0.05, Math.min(8.0, this.zoomLevel * factor));
+    const newZoom = Math.max(0.08, Math.min(8.0, this.zoomLevel * factor));
     const newSpan = (2 * baseSpanLambda * lambda) / newZoom;
 
     const newXMin = targetWorldX - frac * newSpan;
@@ -112,13 +114,17 @@ export class Wave1DPlotRenderer {
     if (ch === 'ch1') this.showCH1 = !this.showCH1;
     if (ch === 'ch2') this.showCH2 = !this.showCH2;
     if (ch === 'sum') this.showSum = !this.showSum;
-    if (ch === 'env') this.showEnvelope = !this.showEnvelope;
+    if (ch === 'env' || ch === 'envSum') this.showEnvelope = !this.showEnvelope;
+    if (ch === 'env1' || ch === 'ch1-env') this.showEnv1 = !this.showEnv1;
+    if (ch === 'env2' || ch === 'ch2-env') this.showEnv2 = !this.showEnv2;
     this.render(this.lastSimTime || 0);
     return {
       showCH1: this.showCH1,
       showCH2: this.showCH2,
       showSum: this.showSum,
-      showEnvelope: this.showEnvelope
+      showEnvelope: this.showEnvelope,
+      showEnv1: this.showEnv1,
+      showEnv2: this.showEnv2
     };
   }
 
@@ -215,7 +221,7 @@ export class Wave1DPlotRenderer {
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         const dist = Math.hypot(dx, dy);
         const scale = dist / touchStartDist;
-        this.zoomLevel = Math.max(0.05, Math.min(8.0, touchStartZoom * scale));
+        this.zoomLevel = Math.max(0.08, Math.min(8.0, touchStartZoom * scale));
         this.render(this.lastSimTime || 0);
       }
     }, { passive: true });
@@ -313,13 +319,15 @@ export class Wave1DPlotRenderer {
     // Core smoothing to avoid infinite spike at source center
     const coreEps = 0.08 * lambda;
 
-    // Precalculate samples across width (high resolution across zoom)
-    const numSamples = Math.max(600, Math.min(1200, Math.floor(pw * 1.5)));
+    // Precalculate samples across width (high resolution across zoom to prevent Nyquist aliasing)
+    const numSamples = Math.max(1200, Math.min(2400, Math.floor(pw * 2.5)));
     const ptsX = new Float32Array(numSamples);
     const ptsE1 = new Float32Array(numSamples);
     const ptsE2 = new Float32Array(numSamples);
     const ptsSum = new Float32Array(numSamples);
     const ptsEnv = new Float32Array(numSamples);
+    const ptsEnv1 = new Float32Array(numSamples);
+    const ptsEnv2 = new Float32Array(numSamples);
 
     for (let i = 0; i < numSamples; i++) {
       const cx = pad.left + (i / (numSamples - 1)) * pw;
@@ -327,12 +335,12 @@ export class Wave1DPlotRenderer {
       ptsX[i] = cx;
 
       // Distance to source 1 (-d/2) and source 2 (+d/2) along y = 0
-      const r1 = Math.sqrt((x - e1x) * (x - e1x) + coreEps * coreEps);
-      const r2 = Math.sqrt((x - e2x) * (x - e2x) + coreEps * coreEps);
+      const r1 = Math.abs(x - e1x);
+      const r2 = Math.abs(x - e2x);
 
       // Mild cylindrical decay factor normalized so feed amplitude is A1/A2
-      const decay1 = Math.min(1.0, 1.0 / Math.sqrt(1 + (r1 / (0.6 * lambda))));
-      const decay2 = Math.min(1.0, 1.0 / Math.sqrt(1 + (r2 / (0.6 * lambda))));
+      const decay1 = 1.0 / Math.sqrt(1 + (r1 / (0.6 * lambda)));
+      const decay2 = 1.0 / Math.sqrt(1 + (r2 / (0.6 * lambda)));
 
       // Field from Source 1
       const v1 = a1 * decay1 * Math.cos(omega * t - k * r1 + alpha1);
@@ -342,23 +350,81 @@ export class Wave1DPlotRenderer {
       // Local phase difference
       const phaseDiff = (alpha2 - k * r2) - (alpha1 - k * r1);
 
-      // Envelope amplitude
+      // Envelope amplitudes
       const amp1 = a1 * decay1;
       const amp2 = a2 * decay2;
       const env = Math.sqrt(Math.max(0, amp1 * amp1 + amp2 * amp2 + 2 * amp1 * amp2 * Math.cos(phaseDiff)));
 
-      ptsE1[i] = v1;
-      ptsE2[i] = v2;
-      ptsSum[i] = v1 + v2;
+      // Strictly bound traces within analytical envelopes to eliminate floating-point jitter & protrusion
+      ptsE1[i] = Math.max(-amp1, Math.min(amp1, v1));
+      ptsE2[i] = Math.max(-amp2, Math.min(amp2, v2));
+      // Strictly bounded within mathematical envelope
+      ptsSum[i] = Math.max(-env, Math.min(env, v1 + v2));
       ptsEnv[i] = env;
+      ptsEnv1[i] = amp1;
+      ptsEnv2[i] = amp2;
     }
 
-    // 3. Draw Envelope Bounds (dashed)
+    // 3a. Draw Source 1 Envelope Bounds (Blue dashed)
+    if (this.showEnv1) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(59, 130, 246, 0.65)';
+      ctx.lineWidth = 1.85 * dpr;
+      ctx.setLineDash([5 * dpr, 2.5 * dpr]);
+
+      // Upper envelope
+      ctx.beginPath();
+      for (let i = 0; i < numSamples; i++) {
+        const cy = worldToCanvasY(ptsEnv1[i]);
+        if (i === 0) ctx.moveTo(ptsX[i], cy);
+        else ctx.lineTo(ptsX[i], cy);
+      }
+      ctx.stroke();
+
+      // Lower envelope
+      ctx.beginPath();
+      for (let i = 0; i < numSamples; i++) {
+        const cy = worldToCanvasY(-ptsEnv1[i]);
+        if (i === 0) ctx.moveTo(ptsX[i], cy);
+        else ctx.lineTo(ptsX[i], cy);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 3b. Draw Source 2 Envelope Bounds (Orange dashed)
+    if (this.showEnv2) {
+      ctx.save();
+      ctx.strokeStyle = 'rgba(249, 115, 22, 0.65)';
+      ctx.lineWidth = 1.85 * dpr;
+      ctx.setLineDash([5 * dpr, 2.5 * dpr]);
+
+      // Upper envelope
+      ctx.beginPath();
+      for (let i = 0; i < numSamples; i++) {
+        const cy = worldToCanvasY(ptsEnv2[i]);
+        if (i === 0) ctx.moveTo(ptsX[i], cy);
+        else ctx.lineTo(ptsX[i], cy);
+      }
+      ctx.stroke();
+
+      // Lower envelope
+      ctx.beginPath();
+      for (let i = 0; i < numSamples; i++) {
+        const cy = worldToCanvasY(-ptsEnv2[i]);
+        if (i === 0) ctx.moveTo(ptsX[i], cy);
+        else ctx.lineTo(ptsX[i], cy);
+      }
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 3c. Draw Total Superposition Envelope Bounds (Emerald dashed)
     if (this.showEnvelope) {
       ctx.save();
-      ctx.strokeStyle = 'rgba(148, 163, 184, 0.45)';
-      ctx.lineWidth = 1.25 * dpr;
-      ctx.setLineDash([4 * dpr, 4 * dpr]);
+      ctx.strokeStyle = 'rgba(16, 185, 129, 0.7)';
+      ctx.lineWidth = 2.0 * dpr;
+      ctx.setLineDash([5 * dpr, 2.5 * dpr]);
 
       // Upper envelope
       ctx.beginPath();
@@ -430,17 +496,17 @@ export class Wave1DPlotRenderer {
       const { x: hx, y: hy } = this.hoverPoint;
       if (hx >= pad.left && hx <= pad.left + pw && hy >= pad.top && hy <= pad.top + ph) {
         const cursorWorldX = canvasToWorldX(hx);
-        const r1 = Math.sqrt((cursorWorldX - e1x) * (cursorWorldX - e1x) + coreEps * coreEps);
-        const r2 = Math.sqrt((cursorWorldX - e2x) * (cursorWorldX - e2x) + coreEps * coreEps);
-        const decay1 = Math.min(1.0, 1.0 / Math.sqrt(1 + (r1 / (0.6 * lambda))));
-        const decay2 = Math.min(1.0, 1.0 / Math.sqrt(1 + (r2 / (0.6 * lambda))));
-        const curE1 = a1 * decay1 * Math.cos(omega * t - k * r1 + alpha1);
-        const curE2 = a2 * decay2 * Math.cos(omega * t - k * r2 + alpha2);
-        const curSum = curE1 + curE2;
-        const curDiff = (alpha2 - k * r2) - (alpha1 - k * r1);
+        const r1 = Math.abs(cursorWorldX - e1x);
+        const r2 = Math.abs(cursorWorldX - e2x);
+        const decay1 = 1.0 / Math.sqrt(1 + (r1 / (0.6 * lambda)));
+        const decay2 = 1.0 / Math.sqrt(1 + (r2 / (0.6 * lambda)));
         const amp1 = a1 * decay1;
         const amp2 = a2 * decay2;
+        const curE1 = Math.max(-amp1, Math.min(amp1, a1 * decay1 * Math.cos(omega * t - k * r1 + alpha1)));
+        const curE2 = Math.max(-amp2, Math.min(amp2, a2 * decay2 * Math.cos(omega * t - k * r2 + alpha2)));
+        const curDiff = (alpha2 - k * r2) - (alpha1 - k * r1);
         const curEnv = Math.sqrt(Math.max(0, amp1 * amp1 + amp2 * amp2 + 2 * amp1 * amp2 * Math.cos(curDiff)));
+        const curSum = Math.max(-curEnv, Math.min(curEnv, curE1 + curE2));
 
         this.drawHoverCursor(ctx, pad, pw, ph, hx, cursorWorldX, curE1, curE2, curSum, curEnv, lambda, dpr, worldToCanvasY);
       }

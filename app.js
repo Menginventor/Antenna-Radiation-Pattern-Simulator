@@ -15,7 +15,7 @@ import { AntennaSimulator } from './simulator.js?v=10';
 import { PolarPlotRenderer } from './polarPlot.js';
 import { WaveFieldRenderer } from './waveField.js?v=10';
 import { CartesianPlotRenderer } from './cartesianPlot.js';
-import { Wave1DPlotRenderer } from './wave1DPlot.js';
+import { Wave1DPlotRenderer } from './wave1DPlot.js?v=26';
 
 class AntennaApp {
   constructor() {
@@ -378,10 +378,31 @@ class AntennaApp {
     }
 
     const btnWavePlay = document.getElementById('btnWavePlayPause');
+    const btnWave1DPlay = document.getElementById('btnWave1DPlayPause');
+
+    const updatePlayState = (isPlaying) => {
+      const text = isPlaying ? '⏸ Pause' : '▶ Play';
+      if (btnWavePlay) {
+        btnWavePlay.textContent = text;
+        btnWavePlay.classList.toggle('active', !isPlaying);
+      }
+      if (btnWave1DPlay) {
+        btnWave1DPlay.textContent = text;
+        btnWave1DPlay.classList.toggle('active', !isPlaying);
+      }
+    };
+
     if (btnWavePlay) {
       btnWavePlay.addEventListener('click', () => {
         const playing = this.waveField.togglePlay();
-        btnWavePlay.textContent = playing ? 'Pause' : 'Play';
+        updatePlayState(playing);
+      });
+    }
+
+    if (btnWave1DPlay) {
+      btnWave1DPlay.addEventListener('click', () => {
+        const playing = this.waveField.togglePlay();
+        updatePlayState(playing);
       });
     }
 
@@ -461,6 +482,22 @@ class AntennaApp {
       btnToggleEnv.addEventListener('click', () => {
         const state = this.wave1DPlot?.toggleChannel('env');
         btnToggleEnv.classList.toggle('active', state?.showEnvelope);
+      });
+    }
+
+    const btnToggleEnv1 = document.getElementById('btnToggleEnv1');
+    if (btnToggleEnv1) {
+      btnToggleEnv1.addEventListener('click', () => {
+        const state = this.wave1DPlot?.toggleChannel('env1');
+        btnToggleEnv1.classList.toggle('active', state?.showEnv1);
+      });
+    }
+
+    const btnToggleEnv2 = document.getElementById('btnToggleEnv2');
+    if (btnToggleEnv2) {
+      btnToggleEnv2.addEventListener('click', () => {
+        const state = this.wave1DPlot?.toggleChannel('env2');
+        btnToggleEnv2.classList.toggle('active', state?.showEnv2);
       });
     }
 

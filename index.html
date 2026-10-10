@@ -12,7 +12,7 @@
   <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
 
   <!-- Main Styling -->
-  <link rel="stylesheet" href="style.css?v=20">
+  <link rel="stylesheet" href="style.css?v=22">
 </head>
 <body>
   <!-- Top Instrument Status & Global Header Bar -->
@@ -381,17 +381,26 @@
                 <span class="wave-1d-subtitle" id="wave1DSubtitle">Spatial Cut along Array Axis (y = 0)</span>
               </div>
               <div class="wave-1d-channel-toggles">
+                <button class="btn btn-secondary btn-sm" id="btnWave1DPlayPause" title="Play / Pause Wave Simulation">⏸ Pause</button>
+                <div class="pane-separator-v"></div>
                 <button class="ch-toggle-btn ch1 active" id="btnToggleCH1" title="Toggle Source 1 (Reference) Trace">
-                  <span class="ch-badge ch1-badge">CH1</span> E₁ (Source 1)
+                  <span class="ch-badge ch1-badge">CH1</span> E₁
                 </button>
                 <button class="ch-toggle-btn ch2 active" id="btnToggleCH2" title="Toggle Source 2 (Variable) Trace">
-                  <span class="ch-badge ch2-badge">CH2</span> E₂ (Source 2)
+                  <span class="ch-badge ch2-badge">CH2</span> E₂
                 </button>
                 <button class="ch-toggle-btn ch-sum active" id="btnToggleSum" title="Toggle Superposition Sum Trace">
-                  <span class="ch-badge sum-badge">Σ</span> Total E₁ + E₂
+                  <span class="ch-badge sum-badge">Σ</span> Total
                 </button>
-                <button class="ch-toggle-btn ch-env active" id="btnToggleEnv" title="Toggle Interference Envelope Bounds">
-                  <span class="ch-badge env-badge">ENV</span> ±Envelope
+                <div class="pane-separator-v"></div>
+                <button class="ch-toggle-btn ch1-env" id="btnToggleEnv1" title="Toggle E₁ (Source 1) Envelope Bounds">
+                  <span class="ch-badge ch1-badge">ENV</span> ±E₁
+                </button>
+                <button class="ch-toggle-btn ch2-env" id="btnToggleEnv2" title="Toggle E₂ (Source 2) Envelope Bounds">
+                  <span class="ch-badge ch2-badge">ENV</span> ±E₂
+                </button>
+                <button class="ch-toggle-btn ch-env active" id="btnToggleEnv" title="Toggle Superposition Total Envelope Bounds">
+                  <span class="ch-badge env-badge">ENV</span> ±Σ
                 </button>
                 <div class="pane-separator-v"></div>
                 <div class="wave-1d-zoom-group">
@@ -508,6 +517,6 @@
   </div>
 
   <!-- Main Application Logic -->
-  <script type="module" src="app.js?v=24"></script>
+  <script type="module" src="app.js?v=26"></script>
 </body>
 </html>
